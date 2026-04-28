@@ -157,8 +157,11 @@
 \label{sec:arch}
 
 Our policy is a memory-augmented vision-language-action (VLA) model built on
-top of the $\pi_{0.5}$ backbone. We keep the backbone weights
-frozen and inject the per-episode memory sequence assembled in
+top of the $\pi_{0.5}$ backbone. We initialize from the pre-trained backbone
+and fine-tune its experts end-to-end in Stage~2 (Sec.~\ref{sec:training}).
+The only components kept frozen throughout both stages are the SigLIP2 visual
+encoder and, after Stage~1, the MotionEncoder $f_\theta$.
+We inject the per-episode memory sequence assembled in
 Sec.~\ref{sec:memory} as additional context tokens.
 
 \paragraph{$\pi_{0.5}$ backbone.}
