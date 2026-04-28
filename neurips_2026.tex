@@ -53,6 +53,9 @@
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
 \usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amsmath}        % align, equation, etc.
+\usepackage{amssymb}        % \mathbb, \mathbf
+\usepackage{bm}             % \boldsymbol
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
@@ -152,12 +155,129 @@
 
 \subsection{Model Architecture}
 \label{sec:arch}
-% TODO: components + data flow.
+
+Our policy is a memory-augmented vision-language-action (VLA) model built on
+top of the $\pi_{0.5}$ backbone. We keep the backbone weights
+frozen and inject the per-episode memory sequence assembled in
+Sec.~\ref{sec:memory} as additional context tokens.
+
+\paragraph{$\pi_{0.5}$ backbone.}
+At history timestep $t$, the policy receives language tokens
+$\boldsymbol{\ell} = \mathrm{Tok}_{\mathrm{text}}(l) \in \mathbb{R}^{N_\ell\times d}$
+and multi-view image tokens
+$\mathbf{o}_t = \mathrm{Tok}_{\mathrm{img}}(I_t) \in \mathbb{R}^{N_o\times d}$
+extracted by a frozen SigLIP2 encoder. $\pi_{0.5}$
+follows the $\pi_0$ multi-expert design and is composed
+of (i) a \emph{VLM expert} $E_{\mathrm{vlm}}$ that fuses language and vision
+and (ii) an \emph{action expert} $E_{\mathrm{act}}$ that predicts an action
+chunk conditioned on the VLM features and a denoising timestep $\tau$. Both
+experts are $L$-layer transformers connected by a \emph{blockwise causal
+attention} operator
+\begin{equation}
+  \mathbf{y} \;=\; \mathrm{BlockAttn}(\mathbf{x}_1, \mathbf{x}_2, \dots, \mathbf{x}_G),
+  \label{eq:blockattn}
+\end{equation}
+in which attention is bidirectional within each block $\mathbf{x}_i$ and
+causal across blocks (block $i$ may attend blocks $1\!:\!i$ but not future
+blocks). The action expert is conditioned on $\tau$ via AdaLN-Zero
+modulation: with action latent
+$\mathbf{s}_t^k$ at layer $k$,
+\begin{equation}
+  \tilde{\mathbf{s}}_t^k = \mathbf{s}_t^{k-1} + g_\tau \odot
+  \mathrm{BlockAttn}^k\!\big(\mathrm{Norm}^k_{\mathrm{vlm}}(\mathbf{u}_t^{k-1}),\,
+  \mathrm{Norm}^k_{\mathrm{act}}(\mathbf{s}_t^{k-1},\tau)\big),
+  \quad
+  \mathbf{s}_t^k = \tilde{\mathbf{s}}_t^k + \tilde{g}_\tau \odot
+  \mathrm{MLP}^k_{\mathrm{act}}\!\big(\mathrm{Norm}^k_{\mathrm{act}}(\tilde{\mathbf{s}}_t^k,\tau)\big),
+  \label{eq:actexpert}
+\end{equation}
+where $g_\tau,\tilde g_\tau$ are gates conditioned on $\tau$. Unlike the
+original $\pi_{0.5}$, which uses the VLM expert to also generate low-level
+language commands, we keep the VLM as a pure feature extractor; this leaves
+a clean interface at which memory can be injected.
+
+\paragraph{Memory token block.}
+We expose the memory sequence $\mathcal{M}$ produced in
+Sec.~\ref{sec:memory} to the backbone as a single token block
+$\mathbf{M}_t \in \mathbb{R}^{B\times d}$ with fixed budget $B$ (zero-padded
+when fewer tokens are available). The two-token-kind structure of
+$\mathcal{M}$ — TokenDropped keyframe patches and MotionJEPA motion tokens —
+is opaque to the backbone: from the policy's perspective $\mathbf{M}_t$ is
+just a length-$B$ sequence of $d$-dimensional vectors carrying time tags.
+
+\paragraph{Three integration mechanisms.}
+We systematically study three places at which $\mathbf{M}_t$ can enter the
+backbone, trading parameter count, attention budget, and isolation of the
+pretrained VLM features against each other.
+
+\emph{(1) Memory-as-Context (MaC).} The simplest variant: concatenate
+$\mathbf{M}_t$ with the standard inputs of the VLM expert,
+\begin{equation}
+  \mathbf{u}_t^0 \;=\; [\,\mathbf{M}_t;\, \mathbf{o}_t;\, \boldsymbol{\ell}\,],
+  \qquad
+  \mathbf{u}_t \;=\; E_{\mathrm{vlm}}(\mathbf{u}_t^0).
+  \label{eq:mac}
+\end{equation}
+MaC introduces \emph{no} new parameters and reuses the existing blockwise
+causal attention (\ref{eq:blockattn}); its cost is that memory tokens
+compete with raw observation tokens for the same attention budget inside
+$E_{\mathrm{vlm}}$, and any noise in $\mathbf{M}_t$ propagates through every
+downstream feature.
+
+\emph{(2) Memory-as-Modulator (MaM).} Instead of feeding memory through the
+VLM, we use it to \emph{modulate} the action expert. At each layer $k$, the
+action latent $\tilde{\mathbf{s}}_t^k$ first cross-attends $\mathbf{M}_t$,
+and the result is mapped to per-feature scale/shift parameters via a
+zero-initialized MLP that is then composed with AdaLN:
+\begin{align}
+  \mathbf{r}_t^k &= \mathrm{Attn}^k_{\mathrm{mod}}\!\big(Q\!=\!\tilde{\mathbf{s}}_t^k,\; K\!=\!\mathbf{M}_t,\; V\!=\!\mathbf{M}_t\big), \label{eq:mam-attn}\\
+  (\gamma_t^k,\beta_t^k) &= \mathrm{MLP}^k_{\mathrm{mod}}(\mathbf{r}_t^k), \label{eq:mam-mlp}\\
+  \widehat{\mathbf{s}}_t^k &= \gamma_t^k \odot \mathrm{Norm}^k_{\mathrm{mod}}(\tilde{\mathbf{s}}_t^k) + \beta_t^k, \label{eq:mam-adain}\\
+  \mathbf{s}_t^k &= \widehat{\mathbf{s}}_t^k + \tilde g_\tau \odot \mathrm{MLP}^k_{\mathrm{act}}\!\big(\mathrm{Norm}^k_{\mathrm{act}}(\widehat{\mathbf{s}}_t^k,\tau)\big). \label{eq:mam-out}
+\end{align}
+$\mathrm{MLP}^k_{\mathrm{mod}}$ is initialized so that
+$(\gamma_t^k,\beta_t^k)\!=\!(1,0)$ at the start of fine-tuning, making the
+modulation an exact identity at step zero and protecting the pretrained
+$\pi_{0.5}$ behavior. MaM adds a moderate number of parameters
+($\sim\!80$M, see Sec.~\ref{sec:impl}) and, importantly, leaves the VLM
+expert untouched.
+
+\emph{(3) Memory-as-Expert (MaE).} We allocate a dedicated third expert
+$E_{\mathrm{mem}}$ that processes $\mathbf{M}_t$ through its own $L$ layers
+of self-attention plus MLP:
+\begin{equation}
+  \tilde{\mathbf{v}}_t^k = \mathbf{v}_t^{k-1} + \mathrm{BlockAttn}^k\!\big(\mathrm{Norm}^k_{\mathrm{mem}}(\mathbf{v}_t^{k-1})\big),
+  \quad
+  \mathbf{v}_t^k = \tilde{\mathbf{v}}_t^k + \mathrm{MLP}^k_{\mathrm{mem}}\!\big(\mathrm{Norm}^k_{\mathrm{mem}}(\tilde{\mathbf{v}}_t^k)\big),
+  \label{eq:mae-self}
+\end{equation}
+with $\mathbf{v}_t^0 = \mathbf{M}_t$. The action expert's update
+(\ref{eq:actexpert}) is then extended to attend \emph{both} VLM and memory
+features as additional context blocks:
+\begin{equation}
+  \tilde{\mathbf{s}}_t^k = \mathbf{s}_t^{k-1} + g_\tau \odot
+  \mathrm{BlockAttn}^k\!\big(
+  \mathrm{Norm}^k_{\mathrm{mem}}(\mathbf{v}_t^{k-1}),\,
+  \mathrm{Norm}^k_{\mathrm{vlm}}(\mathbf{u}_t^{k-1}),\,
+  \mathrm{Norm}^k_{\mathrm{act}}(\mathbf{s}_t^{k-1},\tau)\big).
+  \label{eq:mae-cross}
+\end{equation}
+The blockwise causal mask is configured asymmetrically: the VLM expert and
+memory expert each use self-attention only and \emph{do not} attend each
+other; the action expert is the sole consumer that attends both. This
+asymmetry preserves the pretrained $\pi_{0.5}$ representations exactly while
+allocating a separate transformer's worth of capacity ($\sim\!190$M
+parameters) to memory processing.
 
 \begin{figure}[t]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{TODO: method overview figure. Brief description of the figure plus the key take-away message.}
+  \caption{TODO: method overview figure. Left: offline memory pipeline
+    (CLIP keyframe detection $\to$ TokenDrop $\to$ MotionJEPA motion
+    tokens) producing $\mathbf{M}_t$. Right: the three injection sites in
+    the $\pi_{0.5}$ backbone — Memory-as-Context into the VLM input,
+    Memory-as-Modulator into AdaLN of the action expert, and
+    Memory-as-Expert as a dedicated third expert.}
   \label{fig:overview}
 \end{figure}
 
@@ -288,11 +408,119 @@ into $\mathcal{M}$.
 
 \subsection{Training Objective}
 \label{sec:objective}
-% TODO: loss formulation + equations.
+
+The full system has two distinct loss surfaces, optimized in two stages:
+the JEPA-style future-prediction loss $\mathcal{L}_{\mathrm{pred}}$ that
+trains the MotionEncoder $f_\theta$ (already given in
+Sec.~\ref{sec:memory}), and a flow-matching loss $\mathcal{L}_{\mathrm{FM}}$
+that trains the VLA backbone together with the integration module.
+
+\paragraph{Flow-matching action loss.}
+Following $\pi_{0.5}$, the policy predicts an $H$-step action chunk
+$\mathbf{A}_t = [a_t, a_{t+1}, \dots, a_{t+H-1}] \in \mathbb{R}^{H\times D}$
+via conditional flow matching. Given a ground-truth chunk
+$\mathbf{A}_t^{\mathrm{data}}\!\sim\!p_{\mathrm{data}}$, Gaussian noise
+$\mathbf{A}_t^{\mathrm{noise}}\!\sim\!\mathcal{N}(\mathbf{0},\mathbf{I})$,
+and a denoising timestep $\tau\!\sim\!\mathcal{U}(0,1)$, we form the linear
+interpolant
+\begin{equation}
+  \mathbf{A}_t^\tau \;=\; (1-\tau)\,\mathbf{A}_t^{\mathrm{data}} \;+\; \tau\,\mathbf{A}_t^{\mathrm{noise}},
+  \label{eq:fm-interp}
+\end{equation}
+whose constant time-derivative is
+$\frac{d}{d\tau}\mathbf{A}_t^\tau = \mathbf{A}_t^{\mathrm{noise}} - \mathbf{A}_t^{\mathrm{data}}$.
+The action expert parameterizes a conditional velocity field
+$\mathbf{v}_\theta(\mathbf{A}_t^\tau,\tau,\mathbf{h}_t)$, where the context
+features $\mathbf{h}_t$ are the layer-$L$ outputs of the integrated
+backbone --- so $\mathbf{h}_t$ depends on the chosen integration mechanism:
+in MaC the memory enters $\mathbf{h}_t$ through the VLM expert
+(\ref{eq:mac}); in MaM through the per-layer modulation
+(\ref{eq:mam-attn}--\ref{eq:mam-out}); in MaE through the cross-expert
+attention (\ref{eq:mae-cross}). The training objective is
+\begin{equation}
+  \mathcal{L}_{\mathrm{FM}} \;=\;
+  \mathbb{E}_{t,\,\tau,\,\mathbf{A}_t^{\mathrm{data}},\,\mathbf{A}_t^{\mathrm{noise}}}\!\Big[\,
+    \big\| \mathbf{v}_\theta\!\big(\mathbf{A}_t^\tau,\tau,\mathbf{h}_t\big)
+    \;-\; \big(\mathbf{A}_t^{\mathrm{noise}} - \mathbf{A}_t^{\mathrm{data}}\big) \big\|_2^2
+  \,\Big].
+  \label{eq:fm-loss}
+\end{equation}
+At inference the action chunk is generated by integrating $\mathbf{v}_\theta$
+from $\tau=1$ (pure noise) to $\tau=0$ (data) through a small number of
+Euler steps.
+
+\paragraph{Two-stage training.}
+The two losses are optimized sequentially, not jointly, because the memory
+pipeline encodes a task-agnostic visual-dynamics prior whereas the
+integration module is task-specific.
+
+\emph{Stage 1: Memory-pipeline pre-training.} On unlabeled robot videos we
+jointly train the MotionEncoder $f_\theta$ and the auxiliary MotionDiT
+decoder $g_\phi$ to minimize $\mathcal{L}_{\mathrm{pred}}$
+(Sec.~\ref{sec:memory}). The SigLIP and CLIP backbones, the keyframe
+detector, and the TokenDrop module are training-free throughout. After
+Stage~1, $g_\phi$ is discarded and $f_\theta$ is frozen.
+
+\emph{Stage 2: VLA fine-tuning.} For every demonstration episode we
+\emph{pre-compute and cache} the memory sequence
+$\mathcal{M}\!\to\!\mathbf{M}_t$ using the frozen pipeline of Stage~1.
+SigLIP2 visual tokens are likewise pre-computed and cached, following the
+$\pi_{0.5}$ recipe. Trainable parameters in
+Stage~2 are exactly: (i) the VLM expert, (ii) the action expert, and (iii)
+the integration module --- which contributes $0$ new parameters for MaC
+(Eq.~\ref{eq:mac}), $\sim\!80$M for MaM
+(Eqs.~\ref{eq:mam-attn}--\ref{eq:mam-out}), or $\sim\!190$M for MaE
+(Eqs.~\ref{eq:mae-self}--\ref{eq:mae-cross}). The single optimization
+objective is $\mathcal{L}_{\mathrm{FM}}$. No proprioceptive state enters
+the backbone in Stage~2 (proprioception only participates in
+Sec.~\ref{sec:memory} when forming motion tokens).
+
+This decoupling is what makes the same memory pipeline reusable across all
+three integration variants and across downstream tasks: Stage~1 is run
+once; Stage~2 is repeated for each (task, integration) configuration.
 
 \subsection{Implementation Details}
 \label{sec:impl}
-% TODO: key hyperparameters / engineering details.
+
+\paragraph{Memory pipeline.}
+SigLIP2 provides $S\!=\!256$ patch tokens of
+width $E\!=\!1152$ per $384\!\times\!384$ frame. CLIP keyframe detection
+uses an RBF smoother of width $3$ frames and a threshold $\tau$ tuned so
+that the average inter-keyframe gap is $\sim\!32$ frames. TokenDrop
+operates on the $16\!\times\!16$ patch grid; a patch is marked significant
+when its mean per-pixel absolute RGB difference w.r.t. the previous
+keyframe exceeds $\delta\!=\!10^{-2}$, after which we add the patches
+inside the axis-aligned bounding rectangle of the significant set. The
+first keyframe is always retained in full at $S$ tokens. The MotionJEPA
+encoder uses stride $\Delta\!=\!8$, $M\!=\!8$ readout queries, an
+encoder-width $H\!=\!1024$, and a $4$-layer causal transformer (RMSNorm,
+1D-RoPE, SwiGLU). MotionDiT $g_\phi$ is a $6$-layer DiT with AdaLN-zero
+modulation and a tied gated input/output projection initialized to zero.
+All memory-pipeline parameters total $\sim\!60$M; SigLIP2 and CLIP are
+frozen.
+
+\paragraph{Memory budget and compression.}
+We cap $\mathbf{M}_t$ at $B\!=\!512$ tokens of width $d\!=\!1024$ for all
+integration variants, padding with zeros when the assembled $\mathcal{M}$
+is shorter. Compared with the naive flattened representation of
+$T\!\cdot\!S$ patch tokens per episode, this is a ${\sim}\,250\times$
+reduction at $T\!\approx\!500$, while preserving both the long-range
+keyframe anchors (the first keyframe contributes a full $S\!=\!256$ tokens)
+and short-range dynamics ($M\!=\!8$ motion tokens per $\Delta\!=\!8$
+frames).
+
+\paragraph{Backbone and training schedule.}
+The base $\pi_{0.5}$ policy processes $576$ context tokens ($512$ visual
+$+$ $64$ language) and contains $3.2$B parameters. Stage~2 fine-tuning uses
+AdamW ($\beta_1\!=\!0.9$, $\beta_2\!=\!0.95$, weight decay $0$), constant
+learning rate $5\!\times\!10^{-5}$ with $5\%$ warmup, gradient-norm clip
+$1.0$, EMA $0.999$, action horizon $H\!=\!20$, and $80$k steps. Effective
+batch size is $64$ for MaC and MaM and $8$ for MaE (the larger memory
+expert is the bottleneck). All runs use $4{\times}$NVIDIA~A40 GPUs with
+FSDP, $\sim\!3$--$4$ days per configuration. Stage~1 uses the same
+optimizer with a shorter $40$k-step schedule on a separate unlabeled
+video corpus. The SigLIP2 ViT is frozen and its outputs are cached on
+disk to amortize cost across configurations.
 
 
 \section{Experiments}
@@ -387,8 +615,8 @@ Note: Think of the appendix as ``optional reading'' for reviewers. The paper mus
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\newpage
-\input{checklist.tex}
+% \newpage
+% \input{checklist.tex}
 
 
 \end{document}
