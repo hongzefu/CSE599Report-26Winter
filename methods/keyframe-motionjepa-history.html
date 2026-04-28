@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Keyframe + MotionJEPA · History Tokens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf7f2; --bg2:#f0ebe1; --ink:#1a1410; --ink-soft:#4a3f35;
+  --rule:#d9cfbe;
+  --accent:#d85400; --accent-soft:#ffe8d4;
+  --motion:#2f6fd6; --motion-soft:#dce8fb;
+  --frozen-bg:#e7eee5; --frozen-border:#9db89a; --frozen-ink:#3a5a40;
+  --kept:#2f9d62;   --kept-soft:#dff1e5;
+  --td:#c47a00;     --td-soft:#fff1cc;   /* token-drop amber */
+  --drop:#e7e0d1;
+  --paper:radial-gradient(ellipse at top,#fffdf8 0%,var(--bg) 55%);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,sans-serif;
+  background:var(--paper); color:var(--ink);
+  min-height:100vh; padding:48px 32px 80px;
+  background-attachment:fixed;
+}
+body::before{
+  content:""; position:fixed; inset:0;
+  background-image:radial-gradient(circle at 1px 1px,rgba(26,20,16,.05) 1px,transparent 0);
+  background-size:24px 24px; pointer-events:none; z-index:0;
+}
+.wrap{max-width:1280px;margin:0 auto;position:relative;z-index:1}
+
+/* --- header --- */
+header{border-bottom:1px solid var(--rule);padding-bottom:28px;margin-bottom:36px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:32px;flex-wrap:wrap}
+.tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--accent);font-weight:700;
+  display:inline-flex;align-items:center;gap:10px;margin-bottom:14px}
+.tag::before{content:"";width:28px;height:1px;background:var(--accent)}
+h1{font-family:'Fraunces',serif;font-weight:800;font-size:clamp(32px,4.2vw,56px);
+  line-height:.98;margin:0 0 10px;letter-spacing:-.02em}
+h1 em{font-style:italic;color:var(--accent);font-weight:600}
+.sub{color:var(--ink-soft);font-size:15px;max-width:640px;line-height:1.55}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--ink-soft);align-self:flex-start}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.swatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+
+/* --- stage --- */
+.stage{background:#fffdf8;border:1px solid var(--rule);border-radius:14px;
+  padding:32px 36px 36px;margin-bottom:28px;
+  box-shadow:0 1px 0 rgba(26,20,16,.02),0 8px 30px -18px rgba(26,20,16,.18);
+  animation:rise .6s ease both}
+.stage:nth-child(2){animation-delay:.05s}.stage:nth-child(3){animation-delay:.12s}
+.stage:nth-child(4){animation-delay:.20s}.stage:nth-child(5){animation-delay:.28s}
+.stage:nth-child(6){animation-delay:.36s}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.stage-head{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;
+  padding-bottom:14px;border-bottom:1px dashed var(--rule)}
+.num{font-family:'Fraunces',serif;font-style:italic;font-size:32px;font-weight:600;
+  color:var(--accent);line-height:1}
+.stage-title{font-family:'Fraunces',serif;font-size:22px;font-weight:600;
+  letter-spacing:-.01em;margin:0}
+.stage-desc{margin-left:auto;font-size:13px;color:var(--ink-soft);
+  font-family:'JetBrains Mono',monospace;text-align:right;flex-shrink:0}
+
+/* --- frames grid --- */
+.frames{display:grid;grid-template-columns:repeat(16,1fr);gap:5px;margin-bottom:6px}
+.frame{aspect-ratio:1/1;border-radius:5px;position:relative;overflow:hidden;
+  border:1.5px solid transparent;background:#e8dfcc;cursor:pointer}
+.frame svg{display:block;width:100%;height:100%}
+.frame .ring{position:absolute;inset:-3px;border:2px solid var(--accent);
+  border-radius:8px;opacity:0;transition:opacity .3s;pointer-events:none}
+.frame.keyframe{border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 0 0 2px rgba(216,84,0,.15),0 4px 14px -4px rgba(216,84,0,.4)}
+.frame.keyframe .ring{opacity:1}
+.frame.keyframe::after{content:"K";position:absolute;top:3px;right:3px;
+  background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;
+  font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px}
+.frame.mt-edge{outline:2px solid rgba(47,111,214,.5);outline-offset:1px}
+.frame.mt-edge::after{content:"M";position:absolute;top:3px;right:3px;
+  background:var(--motion);color:#fff;font-family:'JetBrains Mono',monospace;
+  font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px}
+.frame.td-frame{opacity:.75;border-color:rgba(196,122,0,.4)}
+.frame.inter{opacity:.32}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 2px rgba(216,84,0,.15),0 4px 14px -4px rgba(216,84,0,.4)}
+  50%{box-shadow:0 0 0 4px rgba(216,84,0,.22),0 6px 18px -4px rgba(216,84,0,.55)}}
+.frame.keyframe{animation:pulse 2.8s ease-in-out infinite}
+.frame-idx{display:grid;grid-template-columns:repeat(16,1fr);gap:5px;
+  font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink-soft);
+  text-align:center;margin-top:3px}
+.kf-bracket{
+  margin-top:12px;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);
+  display:flex;align-items:center;gap:6px}
+.kf-bracket .brace{flex:1;height:1px;background:var(--accent);opacity:.35}
+
+/* --- CLIP curve --- */
+.curve-wrap{position:relative;background:linear-gradient(180deg,#fff,#fbf6ea);
+  border:1px solid var(--rule);border-radius:10px;padding:20px 22px 14px}
+.curve-wrap svg{width:100%;height:180px;display:block}
+.curve-label{position:absolute;top:14px;left:22px;font-family:'JetBrains Mono',monospace;
+  font-size:10px;color:var(--ink-soft);letter-spacing:.12em;text-transform:uppercase}
+.curve-label strong{color:var(--accent);font-weight:700}
+
+/* --- token-drop stage 03 --- */
+.td-demo{display:grid;grid-template-columns:1fr 28px 1fr 28px 1fr;
+  gap:0;align-items:center;margin-bottom:24px}
+.td-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.td-col-label{font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.td-arrow{font-size:22px;color:var(--ink-soft);opacity:.5;text-align:center;line-height:1}
+.td-thumb{width:72px;height:72px;border-radius:6px;overflow:hidden;
+  border:2px solid var(--rule);flex:none}
+.td-thumb.kf-ref{border-color:var(--accent)}
+.td-steps{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:0}
+.td-step{background:#f9f6f0;border:1px solid var(--rule);border-radius:8px;
+  padding:10px 14px}
+.td-step.wide{grid-column:1 / -1}
+.td-step-num{font-family:'Fraunces',serif;font-style:italic;font-size:18px;
+  font-weight:600;color:var(--accent);line-height:1;margin-bottom:4px}
+.td-step-text{font-family:'JetBrains Mono',monospace;font-size:10.5px;
+  color:var(--ink-soft);line-height:1.6}
+.td-step-text code{color:var(--ink);background:#eee8da;padding:1px 4px;border-radius:3px;font-size:10px}
+.td-step b{color:var(--accent)}
+.td-step .b2{color:var(--motion)}
+
+/* --- MotionJEPA pipeline stage 04 --- */
+.pipeline{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.pipe-card{flex:1;min-width:190px;background:linear-gradient(180deg,#fff,#f6faff);
+  border:1px solid rgba(47,111,214,.35);border-top:3px solid var(--motion);
+  border-radius:10px;padding:14px 16px 16px;display:flex;flex-direction:column;
+  align-items:center;gap:8px}
+.pipe-card-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;
+  letter-spacing:.12em;color:var(--motion);text-transform:uppercase;align-self:flex-start}
+.pair-frames{display:flex;gap:6px;align-items:center}
+.pair-frame{width:44px;height:44px;border-radius:5px;overflow:hidden;
+  border:1.5px solid var(--rule);flex:none}
+.pair-frame svg{display:block;width:100%;height:100%}
+.pair-frame.anchor{border-color:var(--motion)}
+.pair-arrow{font-size:16px;color:var(--motion);opacity:.65;line-height:1}
+.pipe-down{width:0;height:0;border-left:5px solid transparent;
+  border-right:5px solid transparent;border-top:7px solid var(--motion);opacity:.5}
+.siglip-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.siglip-col{display:flex;flex-direction:column;align-items:center;gap:5px;min-width:0}
+.siglip-box{width:100%;padding:7px 8px;border-radius:7px;text-align:center;
+  border:1.5px solid var(--frozen-border);background:var(--frozen-bg);
+  color:var(--frozen-ink);font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:700;letter-spacing:.06em;line-height:1.35}
+.siglip-tokens{width:100%;display:flex;justify-content:center}
+.token-tag{width:100%;padding:4px 6px;border-radius:6px;text-align:center;
+  border:1px solid var(--frozen-border);background:#fff;font-family:'JetBrains Mono',monospace;
+  font-size:7px;color:var(--frozen-ink);letter-spacing:.03em;line-height:1.45}
+.enc-box{padding:8px 14px;border-radius:7px;text-align:center;
+  font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:.07em;
+  font-size:11px;border:1.5px solid var(--motion);background:var(--motion-soft);
+  color:var(--motion);width:100%}
+.enc-sub{font-size:8px;font-weight:500;letter-spacing:.04em;opacity:.8;margin-top:2px}
+.m-toks{display:flex;gap:4px;justify-content:center}
+.m-tok{width:11px;height:22px;border-radius:2.5px;background:var(--motion);opacity:.8}
+.formula-note{background:#f0f6ff;border:1px solid rgba(47,111,214,.25);border-radius:8px;
+  padding:12px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--ink-soft);margin-top:6px;line-height:1.6}
+.formula-note b{color:var(--motion)}
+
+/* --- memory strip stage 05 --- */
+.memory{background:linear-gradient(90deg,#fff7e6 0%,#fff 50%,#e8f0fb 100%);
+  border:1.5px solid var(--rule);border-radius:12px;padding:24px 26px}
+.memory-title{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;
+  display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.memory-title strong{color:var(--accent);font-weight:700}
+.memory-scroll{overflow-x:auto;padding-bottom:8px}
+.memory-timeline{position:relative;min-width:1120px;height:258px}
+.memory-guide,.strip{position:absolute;inset:0}
+.memory-axis{position:absolute;left:0;right:0;top:124px;height:1px;background:rgba(74,63,53,.22)}
+.memory-tick{position:absolute;top:118px;width:1px;height:12px;background:rgba(74,63,53,.16)}
+.memory-tick.major{top:114px;height:20px;background:rgba(74,63,53,.3)}
+.memory-tick.kf{top:108px;height:32px;background:rgba(216,84,0,.38)}
+.memory-tick.mt{top:110px;height:28px;background:rgba(47,111,214,.38)}
+.memory-label{position:absolute;top:145px;transform:translateX(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);
+  letter-spacing:.05em;white-space:nowrap}
+.memory-label.kf{color:var(--accent);font-weight:700}
+.memory-label.mt{color:var(--motion);font-weight:600}
+.memory-label.at-start{transform:none}
+.memory-label.at-end{transform:translateX(-100%)}
+.ev{position:absolute;top:18px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;width:78px}
+.ev.at-start{transform:none;align-items:flex-start}
+.ev.at-end{transform:translateX(-100%);align-items:flex-end}
+.ev-tokens{padding:7px;border-radius:8px;background:#fff;border:1.5px solid var(--rule);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  width:72px;min-height:72px}
+.ev.kf .ev-tokens{border-color:var(--accent);background:#fffaf3;
+  box-shadow:0 2px 10px -4px rgba(216,84,0,.28)}
+.ev.mt .ev-tokens{border-color:var(--motion);background:#f4f8ff}
+.ev-mtok{display:flex;gap:3px}
+.ev-mtok-r{width:8px;height:18px;border-radius:2px;background:var(--motion)}
+.ev-caption{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);
+  letter-spacing:.05em;margin-top:6px;text-align:center;line-height:1.4;width:100%}
+.ev.at-start .ev-caption{text-align:left}
+.ev.at-end .ev-caption{text-align:right}
+.ev.kf .ev-caption{color:var(--accent);font-weight:700}
+.ev.mt .ev-caption{color:var(--motion);font-weight:500}
+.counter{display:flex;gap:24px;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;
+  font-size:11px;color:var(--ink-soft);margin-top:18px;padding-top:16px;
+  border-top:1px dashed var(--rule)}
+.counter b{font-family:'Fraunces',serif;font-size:22px;font-style:italic;
+  display:block;color:var(--ink);font-weight:600}
+.counter b.a{color:var(--accent)}.counter b.m{color:var(--motion)}
+.counter b.s{color:var(--kept)}.counter b.td{color:var(--td)}
+
+@media (max-width: 900px){
+  body{padding:32px 18px 64px}
+  .stage{padding:26px 20px 28px}
+  .memory{padding:20px 18px}
+}
+
+footer{margin-top:40px;padding-top:20px;border-top:1px solid var(--rule);
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;
+  color:var(--ink-soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <div class="tag">Perceptual Memory · Keyframe + MotionJEPA</div>
+    <h1>Keyframes <em>anchor scenes</em>,<br>patches <em>track motion</em>, tokens <em>compress change</em>.</h1>
+    <p class="sub">
+
+    </p>
+  </div>
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--accent)"></i>Keyframe</span>
+    <span><i class="swatch" style="background:var(--kept)"></i>Full ViT token</span>
+    <span><i class="swatch" style="background:var(--motion)"></i>Motion token (JEPA)</span>
+  </div>
+</header>
+
+<!-- STAGE 01: raw frames -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="num">01</span>
+    <h2 class="stage-title">Input · robot video · 48 frames</h2>
+    <span class="stage-desc">Keyframe every ~32 frames (±variation) &nbsp;·&nbsp; MT every 8 frames</span>
+  </div>
+  <div class="frames" id="rawFrames"></div>
+  <div class="frame-idx" id="rawIdx"></div>
+  <div class="kf-bracket">
+    <span>Keyframe@0</span>
+    <span class="brace"></span>
+    <span style="opacity:.7">≈ 35 frames apart</span>
+    <span class="brace"></span>
+    <span>Keyframe@35</span>
+    <span class="brace" style="flex:.3"></span>
+    <span style="opacity:.7">≈ 12</span>
+    <span class="brace" style="flex:.3"></span>
+    <span>Keyframe@47</span>
+  </div>
+</section>
+
+<!-- STAGE 02: CLIP curve -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="num">02</span>
+    <h2 class="stage-title">CLIP keyframe detection</h2>
+    <span class="stage-desc">RBF-smoothed ‖CLIP(f<sub>t</sub>) − CLIP(f<sub>t−1</sub>)‖ &nbsp;·&nbsp; peaks above τ → keyframe</span>
+  </div>
+  <div class="curve-wrap">
+    <div class="curve-label">Δ<strong> CLIP distance</strong> — orange spikes = keyframe &nbsp;·&nbsp; blue dashes = MT window boundaries</div>
+    <svg viewBox="0 0 800 180" preserveAspectRatio="none" id="curveSvg"></svg>
+  </div>
+</section>
+
+<!-- STAGE 03: token dropping -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="num">03</span>
+    <h2 class="stage-title">Keyframe TokenDrop</h2>
+    <span class="stage-desc">pixel diff threshold + bounding rectangle</span>
+  </div>
+
+  <div class="td-demo">
+    <!-- col 1: reference KF -->
+    <div class="td-col">
+      <div class="td-col-label">① Reference<br>KF @ t=0</div>
+      <div class="td-thumb kf-ref" id="tdRefThumb"></div>
+      <div id="tdRefGrid"></div>
+    </div>
+    <div class="td-arrow">→</div>
+    <!-- col 2: current later keyframe -->
+    <div class="td-col">
+      <div class="td-col-label">② Current<br>keyframe t=35</div>
+      <div class="td-thumb" id="tdCurThumb"></div>
+      <div id="tdCurGrid"></div>
+    </div>
+    <div class="td-arrow">→</div>
+    <!-- col 3: diff result -->
+    <div class="td-col">
+      <div class="td-col-label">③ Pixel diff<br>threshold + BBox</div>
+      <div id="tdDiffGrid"></div>
+      <div id="tdDiffLegend" style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);text-align:center"></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- STAGE 04: MotionJEPA -->
+<section class="stage">
+  <div class="stage-head">
+    <span class="num">04</span>
+    <h2 class="stage-title">MotionJEPA · fixed 8-frame window motion encoding</h2>
+    <span class="stage-desc">motion_vec = MotionEncoder( tokens<sub>t</sub> , tokens<sub>t+8</sub> ) → (B, M=4, D<sub>m</sub>)</span>
+  </div>
+  <div class="pipeline" id="pipeline"></div>
+</section>
+
+<!-- STAGE 05: history strip -->
+<section class="stage">
+  <div class="stage-head">
+      <span class="num">05</span>
+    <h2 class="stage-title">Combined History Token Sequence </h2>
+    <span class="stage-desc"></span>
+  </div>
+  <div class="memory">
+    <div class="memory-title">
+      <span>Assembled token sequence — aligned to input timestamps</span>
+      <strong>8 events from 48 frames</strong>
+    </div>
+    <div class="memory-scroll">
+      <div class="memory-timeline">
+        <div class="memory-guide" id="memoryGuide"></div>
+        <div class="strip" id="memoryStrip"></div>
+      </div>
+    </div>
+    <div class="counter" id="counter"></div>
+  </div>
+</section>
+
+<footer>
+  <span>Perceptual Memory · Keyframe (~32f) + MotionJEPA (every 8f)</span>
+  <span>HTML / CSS / SVG · single-file</span>
+</footer>
+</div>
+
+<script>
+/* ============================================================
+   Parameters
+============================================================ */
+const T = 48;
+const keyframes     = [0, 35, 47];                        // ~32f apart, irregular
+const motionWindows = [{t0:0,t1:8},{t0:8,t1:16},{t0:16,t1:24},{t0:24,t1:32},{t0:32,t1:40}];
+const mtEdges       = new Set(motionWindows.map(w=>w.t1)); // t=8,16,24,32,40
+
+// No standalone TokenDrop-only frames remain in the final history sequence.
+const tdSet = new Set();
+
+function expandPatchRuns(runs) {
+  return runs.flatMap(([r, c0, c1]) =>
+    Array.from({length: c1 - c0 + 1}, (_, offset) => [r, c0 + offset])
+  );
+}
+
+// TokenDrop patch data for keyframes kept after t=0
+const tdPatchData = {
+  35: {
+    sig: expandPatchRuns([
+      [4, 5, 7],
+      [5, 5, 8],
+      [6, 6, 9],
+      [7, 7, 10],
+      [8, 8, 11],
+    ]),
+    rect:{r0:4,c0:5,r1:8,c1:11},
+  },
+  47: {
+    sig: expandPatchRuns([
+      [6, 9, 10],
+      [7, 9, 11],
+      [8, 10, 12],
+      [9, 11, 13],
+    ]),
+    rect:{r0:6,c0:9,r1:9,c1:13},
+  },
+};
+
+// Demo patch data for Stage 03 illustration (KF@35 vs KF@0)
+const demoSig  = tdPatchData[35].sig;
+const demoRect = tdPatchData[35].rect;
+
+function rectPatchCount(rect) {
+  if (!rect) return 0;
+  return (rect.r1 - rect.r0 + 1) * (rect.c1 - rect.c0 + 1);
+}
+
+/* ============================================================
+   frameSVG — unique gradient IDs via counter
+============================================================ */
+let _gid = 0;
+function frameSVG(t) {
+  const uid = _gid++;
+  const kfBefore = keyframes.filter(k=>k<=t);
+  const stage = kfBefore.length - 1;
+  const lastKf = kfBefore[kfBefore.length-1] ?? 0;
+  const localT = (t - lastKf) % 16; // cycle to keep gripper in-bounds
+
+  const desk     = ['#c69a6b','#b88856','#d0a274','#a87d50','#be8f5d'][stage%5];
+  const deskDark = ['#8a6236','#7a5428','#9a6b3c','#6e4820','#835932'][stage%5];
+  const gx = 32 + localT * 3.2;
+  const cubeSet = [
+    [[22,58,'#b53b2e'],[46,62,'#e8e2d4']],
+    [[30,60,'#b53b2e'],[52,58,'#e8e2d4']],
+    [[38,62,'#b53b2e'],[58,56,'#e8e2d4']],
+    [[46,60,'#b53b2e'],[62,54,'#e8e2d4']],
+    [[52,58,'#b53b2e'],[66,56,'#e8e2d4']],
+  ][stage%5];
+
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="g${uid}" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="${desk}"/>
+      <stop offset="1" stop-color="${deskDark}"/>
+    </linearGradient></defs>
+    <rect width="100" height="100" fill="url(#g${uid})"/>
+    <path d="M0 30 Q50 34 100 30" stroke="${deskDark}" stroke-width=".6" fill="none" opacity=".5"/>
+    <path d="M0 55 Q50 52 100 55" stroke="${deskDark}" stroke-width=".6" fill="none" opacity=".4"/>
+    <rect x="40" y="48" width="22" height="18" fill="#2a2a2a" opacity=".85" rx="1.5"/>
+    <rect x="42" y="50" width="18" height="14" fill="#ddd" rx="1"/>
+    ${cubeSet.map(([cx,cy,col])=>`
+      <rect x="${cx}" y="${cy}" width="8" height="8" fill="${col}" rx="1"/>
+      <rect x="${cx}" y="${cy}" width="8" height="2" fill="rgba(255,255,255,.3)" rx="1"/>
+    `).join('')}
+    <rect x="${gx-2}" y="0" width="4" height="18" fill="#ddd"/>
+    <rect x="${gx-7}" y="16" width="14" height="6" fill="#aaa" rx="1"/>
+    <rect x="${gx-7}" y="22" width="3" height="8" fill="#999"/>
+    <rect x="${gx+4}" y="22" width="3" height="8" fill="#999"/>
+  </svg>`;
+}
+
+/* ============================================================
+   Patch grid SVG generator
+   opts: { mode:'full'|'partial', sigPatches:[[r,c],...], fillRect:{r0,c0,r1,c1}, ps:patchSize, frame:boolean }
+============================================================ */
+function patchGridSVG(opts) {
+  const N = 16;
+  const mode = opts.mode || 'partial';
+  const ps = opts.ps || 9;
+  const showFrame = opts.frame !== false;
+  const W = N*ps, H = N*ps;
+  const sigSet = new Set((opts.sigPatches||[]).map(([r,c])=>r*N+c));
+  const fillSet = new Set();
+  if(mode === 'partial' && opts.fillRect){
+    const {r0,c0,r1,c1} = opts.fillRect;
+    for(let r=r0;r<=r1;r++) for(let c=c0;c<=c1;c++) fillSet.add(r*N+c);
+  }
+  let rects='';
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const idx=r*N+c;
+    const fill = mode === 'full' ? '#2f9d62'
+               : sigSet.has(idx)  ? '#d85400'
+               : fillSet.has(idx) ? 'rgba(47,111,214,0.55)'
+               : '#ccc5b5';
+    rects += `<rect x="${c*ps}" y="${r*ps}" width="${ps-1}" height="${ps-1}" fill="${fill}" rx=".5"/>`;
+  }
+  let outline='';
+  if(mode === 'partial' && opts.fillRect){
+    const {r0,c0,r1,c1}=opts.fillRect;
+    outline=`<rect x="${c0*ps}" y="${r0*ps}" width="${(c1-c0+1)*ps}" height="${(r1-r0+1)*ps}"
+      fill="none" stroke="#2f6fd6" stroke-width="2.5" rx="2"/>`;
+  }
+  const borderStyle = showFrame ? 'border:1px solid var(--rule);' : 'border:none;';
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"
+    style="display:block;border-radius:6px;${borderStyle}">${rects}${outline}</svg>`;
+}
+
+/* ============================================================
+   Stage 01: raw frames
+============================================================ */
+const rawFrames = document.getElementById('rawFrames');
+const rawIdx    = document.getElementById('rawIdx');
+
+for(let t=0;t<T;t++){
+  const isKf = keyframes.includes(t);
+  const isMt = mtEdges.has(t);
+  const isTd = tdSet.has(t);
+
+  let cls='frame';
+  if(isKf) cls+=' keyframe';
+  else if(isMt) cls+=' mt-edge';
+  else if(isTd) cls+=' td-frame';
+  else cls+=' inter';
+
+  const d=document.createElement('div');
+  d.className=cls;
+  d.innerHTML=frameSVG(t)+'<span class="ring"></span>';
+  d.title=`t=${t}`+(isKf?' · keyframe':isMt?' · MT window boundary':isTd?' · TokenDrop patch event':'');
+  rawFrames.appendChild(d);
+
+  const s=document.createElement('span');
+  if(isKf){ s.textContent=t; s.style.cssText='color:var(--accent);font-weight:700'; }
+  else if(isMt){ s.textContent=t; s.style.cssText='color:var(--motion);font-weight:600'; }
+  else if(t%8===0){ s.textContent=t; }
+  rawIdx.appendChild(s);
+}
+
+/* ============================================================
+   Stage 02: CLIP curve
+============================================================ */
+(function drawCurve(){
+  const svg=document.getElementById('curveSvg');
+  const W=800,H=180,padL=32,padR=12,padT=18,padB=28;
+  const iW=W-padL-padR,iH=H-padT-padB,maxY=0.9;
+  const x=i=>padL+(i/(T-1))*iW;
+  const y=v=>padT+iH-(v/maxY)*iH;
+  const tau=0.35;
+
+  // fabricate curve: small noise + spikes at keyframes
+  const curve=[];
+  for(let t=0;t<T;t++){
+    let v=0.07+Math.sin(t*.65)*.03+(Math.random()*.04-.02);
+    if(keyframes.includes(t)&&t!==0) v=0.52+Math.random()*.2;
+    if(keyframes.includes(t+1)&&t>0) v+=0.05;
+    curve.push(Math.max(0,v));
+  }
+  curve[0]=0.02;
+
+  let html='';
+  // grid
+  for(let g=0;g<=4;g++){
+    const yy=padT+(g/4)*iH;
+    html+=`<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="#e8dfcc" stroke-width="1"/>`;
+  }
+  // MT boundary dashes
+  motionWindows.forEach(w=>{
+    const xx=x(w.t1);
+    html+=`<line x1="${xx}" x2="${xx}" y1="${padT}" y2="${H-padB+4}" stroke="#2f6fd6" stroke-width="1.2" stroke-dasharray="4 3" opacity=".5"/>`;
+    html+=`<text x="${xx+3}" y="${padT+11}" font-family="JetBrains Mono" font-size="9" fill="#2f6fd6" font-weight="700">MT@${w.t1}</text>`;
+  });
+  // threshold
+  html+=`<line x1="${padL}" x2="${W-padR}" y1="${y(tau)}" y2="${y(tau)}" stroke="#d85400" stroke-width="1.2" stroke-dasharray="5 4" opacity=".7"/>`;
+  html+=`<text x="${W-padR-4}" y="${y(tau)-5}" font-family="JetBrains Mono" font-size="10" fill="#d85400" text-anchor="end">τ</text>`;
+  // area
+  let path=`M ${x(0)} ${y(curve[0])}`;
+  for(let i=1;i<T;i++){
+    const cx=(x(i-1)+x(i))/2;
+    path+=` C ${cx} ${y(curve[i-1])}, ${cx} ${y(curve[i])}, ${x(i)} ${y(curve[i])}`;
+  }
+  html+=`<defs><linearGradient id="ag" x1="0" x2="0" y1="0" y2="1">
+    <stop offset="0" stop-color="#d85400"/><stop offset="1" stop-color="#d85400" stop-opacity="0"/>
+  </linearGradient></defs>`;
+  html+=`<path d="${path} L${x(T-1)} ${y(0)} L${x(0)} ${y(0)} Z" fill="url(#ag)" opacity=".28"/>`;
+  html+=`<path d="${path}" stroke="#1a1410" stroke-width="1.8" fill="none"/>`;
+  // points
+  for(let i=0;i<T;i++){
+    const kf=keyframes.includes(i);
+    html+=`<circle cx="${x(i)}" cy="${y(curve[i])}" r="${kf?5.5:2.5}"
+      fill="${kf?'#d85400':'#8a7660'}" stroke="${kf?'#fff':'none'}" stroke-width="${kf?2:0}"/>`;
+    if(kf){
+      html+=`<line x1="${x(i)}" x2="${x(i)}" y1="${y(curve[i])+8}" y2="${H-padB+4}"
+        stroke="#d85400" stroke-width="1" stroke-dasharray="2 3" opacity=".55"/>`;
+      html+=`<text x="${x(i)}" y="${H-padB+16}" text-anchor="middle"
+        font-family="JetBrains Mono" font-size="10" fill="#d85400" font-weight="700">t=${i}</text>`;
+    }
+  }
+  html+=`<line x1="${padL}" x2="${W-padR}" y1="${H-padB}" y2="${H-padB}" stroke="#4a3f35" stroke-width="1"/>`;
+  svg.innerHTML=html;
+})();
+
+/* ============================================================
+   Stage 03: token-drop demo patch grids
+============================================================ */
+document.getElementById('tdRefThumb').innerHTML = frameSVG(0);
+document.getElementById('tdCurThumb').innerHTML = frameSVG(35);
+
+// Reference frame: all neutral patches (no diff to itself)
+document.getElementById('tdRefGrid').innerHTML =
+  patchGridSVG({ sigPatches:[], fillRect:null, ps:9 });
+
+// Current frame: same neutral layout (just showing grid structure)
+document.getElementById('tdCurGrid').innerHTML =
+  patchGridSVG({ sigPatches:[], fillRect:null, ps:9 });
+
+// Diff result: significant patches + bounding rect
+document.getElementById('tdDiffGrid').innerHTML =
+  patchGridSVG({ sigPatches:demoSig, fillRect:demoRect, ps:9 });
+
+const demoKeptCount = rectPatchCount(demoRect);
+const demoFillCount = Math.max(0, demoKeptCount - demoSig.length);
+document.getElementById('tdDiffLegend').innerHTML = `
+  <span style="color:var(--accent)">■</span> ${demoSig.length} diff &nbsp;
+  <span style="color:var(--motion)">■</span> ${demoFillCount} fill &nbsp;
+  <span style="color:#bbb">■</span> drop<br>
+  ${demoKeptCount} / 256 kept
+`;
+
+/* ============================================================
+   Stage 04: MotionJEPA pipeline cards
+============================================================ */
+const pipeline=document.getElementById('pipeline');
+motionWindows.forEach(w=>{
+  const card=document.createElement('div');
+  card.className='pipe-card';
+  card.innerHTML=`
+    <div class="pipe-card-title">MT@${w.t1} · [${w.t0}→${w.t1}]</div>
+    <div class="pair-frames">
+      <div>
+        <div class="pair-frame anchor">${frameSVG(w.t0)}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--motion);text-align:center;margin-top:2px">t=${w.t0}</div>
+      </div>
+      <div class="pair-arrow">→</div>
+      <div>
+        <div class="pair-frame">${frameSVG(w.t1)}</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--ink-soft);text-align:center;margin-top:2px">t=${w.t1}</div>
+      </div>
+    </div>
+    <div class="pipe-down"></div>
+    <div class="siglip-row">
+      <div class="siglip-col">
+        <div class="siglip-box">FrozenSigLIP</div>
+        <div class="siglip-tokens">
+          <div class="token-tag">(256, 1152)</div>
+        </div>
+      </div>
+      <div class="siglip-col">
+        <div class="siglip-box">FrozenSigLIP</div>
+        <div class="siglip-tokens">
+          <div class="token-tag">(256, 1152)</div>
+        </div>
+      </div>
+    </div>
+    <div class="pipe-down"></div>
+    <div class="enc-box">MotionEncoder<div class="enc-sub">current_tokens[${w.t0}], future_tokens[${w.t1}]</div></div>
+    <div class="pipe-down"></div>
+    <div class="m-toks"><div class="m-tok"></div><div class="m-tok"></div><div class="m-tok"></div><div class="m-tok"></div></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--motion)">(M=4, D<sub>m</sub>)</div>
+  `;
+  pipeline.appendChild(card);
+});
+
+/* ============================================================
+   Stage 05: History strip
+   Events (aligned to t=0..47): KF@0, MT@8, MT@16, MT@24, MT@32, KF@35, MT@40, KF@47
+============================================================ */
+const events=[
+  {type:'kf', semantic:'keyframe', render:'full-grid', t:0},
+  {type:'mt', semantic:'motion', render:'motion', t:8, t0:0, t1:8},
+  {type:'mt', semantic:'motion', render:'motion', t:16, t0:8, t1:16},
+  {type:'mt', semantic:'motion', render:'motion', t:24, t0:16, t1:24},
+  {type:'mt', semantic:'motion', render:'motion', t:32, t0:24, t1:32},
+  {type:'kf', semantic:'keyframe', render:'partial-grid', t:35},
+  {type:'mt', semantic:'motion', render:'motion', t:40, t0:32, t1:40},
+  {type:'kf', semantic:'keyframe', render:'partial-grid', t:47},
+];
+
+function historyPercent(t) {
+  return (t/(T-1))*100;
+}
+
+function setTimelineLeft(el, t) {
+  el.style.left = `${historyPercent(t)}%`;
+  if (t === 0) el.classList.add('at-start');
+  else if (t === T-1) el.classList.add('at-end');
+}
+
+function historyPatchSVG(ev) {
+  if (ev.render === 'full-grid') {
+    return patchGridSVG({ mode:'full', ps:4, frame:false });
+  }
+  const data = tdPatchData[ev.t] || {sig:[], rect:null};
+  return patchGridSVG({
+    mode:'partial',
+    sigPatches:data.sig,
+    fillRect:data.rect,
+    ps:4,
+    frame:false,
+  });
+}
+
+function historyPatchCount(ev) {
+  return ev.render === 'full-grid' ? 256 : rectPatchCount(tdPatchData[ev.t]?.rect);
+}
+
+const guide=document.getElementById('memoryGuide');
+const strip=document.getElementById('memoryStrip');
+const guideKinds = new Map(events.map(ev=>[ev.t, ev.type]));
+
+const axis=document.createElement('div');
+axis.className='memory-axis';
+guide.appendChild(axis);
+
+for(let t=0;t<T;t++){
+  const tick=document.createElement('div');
+  const kind=guideKinds.get(t);
+  let cls='memory-tick';
+  if(kind) cls+=` ${kind}`;
+  else if(t%8===0 || t===T-1) cls+=' major';
+  tick.className=cls;
+  tick.style.left=`${historyPercent(t)}%`;
+  guide.appendChild(tick);
+}
+
+events.forEach(ev=>{
+  const label=document.createElement('div');
+  label.className=`memory-label ${ev.type}`;
+  label.textContent=`t=${ev.t}`;
+  setTimelineLeft(label, ev.t);
+  guide.appendChild(label);
+
+  const block=document.createElement('div');
+  block.className='ev '+ev.type;
+  setTimelineLeft(block, ev.t);
+
+  const tokWrap=document.createElement('div');
+  tokWrap.className='ev-tokens';
+
+  if(ev.type==='mt'){
+    const row=document.createElement('div'); row.className='ev-mtok';
+    for(let i=0;i<4;i++){
+      const r=document.createElement('div'); r.className='ev-mtok-r'; row.appendChild(r);
+    }
+    tokWrap.appendChild(row);
+  } else {
+    tokWrap.innerHTML=historyPatchSVG(ev);
+  }
+
+  const cap=document.createElement('div'); cap.className='ev-caption';
+  if(ev.type==='kf') cap.innerHTML=`Keyframe t=${ev.t}<br>${historyPatchCount(ev)} patch`;
+  else cap.innerHTML=`MT t=${ev.t}<br>M=4 tok`;
+
+  block.appendChild(tokWrap); block.appendChild(cap);
+  strip.appendChild(block);
+});
+
+
+const naive = T * 256;
+let kfFull = 0, tdCount = 0, mtCount = 0;
+events.forEach(ev=>{
+  if(ev.type==='mt') mtCount += 4;
+  else if(ev.render==='full-grid') kfFull += 256;
+  else if(ev.render==='partial-grid') tdCount += rectPatchCount(tdPatchData[ev.t]?.rect);
+});
+const total = kfFull + mtCount + tdCount;
+const ratio = ((total/naive)*100).toFixed(1);
+
+document.getElementById('counter').innerHTML=`
+  <div>naive tokens<br><b>${naive.toLocaleString()}</b></div>
+  <div>full keyframe tokens<br><b class="a">${kfFull.toLocaleString()}</b></div>
+  <div>motion tokens<br><b class="m">${mtCount}</b></div>
+  <div>TokenDrop patch tokens<br><b class="td">${tdCount}</b></div>
+  <div>total kept<br><b class="s">${total.toLocaleString()}</b></div>
+  <div>compression<br><b>${ratio}%</b> of naive</div>
+  <div>history events<br><b>${events.length}</b> from ${T} frames</div>
+`;
+</script>
+</body>
+</html>

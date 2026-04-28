@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MotionJEPA — Diagrams</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F1EA;
+    --paper:#FAF7F0;
+    --ink:#1B1B1A;
+    --ink-soft:#3C3A36;
+    --muted:#8A857D;
+    --rule:#D9D3C6;
+    --frozen-bg:#E8E3D6;
+    --frozen-border:#B8AF9C;
+    --frozen-ink:#4A4740;
+    --train-accent:#B85C3B;
+    --train-bg:#F9E7DC;
+    --train-border:#D99677;
+    --shape:#3A5A40;
+    --shape-bg:#E7EEE5;
+    --shape-border:#9DB89A;
+    --loss:#5E3A8C;
+    --loss-bg:#EDE6F5;
+    --aux-bg:#FFF6EE;
+    --aux-border:#E9C5AC;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',system-ui,sans-serif;
+    font-size:15px;line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    padding:56px 24px 96px;
+    background-image:
+      radial-gradient(circle at 10% 5%, rgba(184,92,59,0.04), transparent 40%),
+      radial-gradient(circle at 95% 30%, rgba(94,58,140,0.04), transparent 40%);
+  }
+  .wrap{max-width:1680px;margin:0 auto;width:100%}
+
+  /* ========= DOC HEADER ========= */
+  header.doc{
+    border-bottom:1px solid var(--rule);
+    padding-bottom:28px;margin-bottom:48px;
+  }
+  header.doc h1{
+    font-family:'Fraunces',serif;font-weight:500;
+    font-size:52px;line-height:1;letter-spacing:-0.02em;margin:0;
+  }
+  header.doc h1 em{font-style:italic;color:var(--train-accent);font-weight:400}
+  header.doc .sub{
+    font-family:'Fraunces',serif;font-style:italic;
+    font-size:20px;color:var(--ink-soft);
+    max-width:640px;margin-top:12px;
+  }
+  header.doc .meta{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    letter-spacing:0.12em;text-transform:uppercase;
+    color:var(--muted);margin-top:18px;
+  }
+
+  .legend{
+    display:flex;gap:28px;flex-wrap:wrap;
+    margin-bottom:20px;padding:14px 20px;
+    background:var(--paper);border:1px solid var(--rule);
+    border-radius:2px;font-size:13px;color:var(--ink-soft);
+  }
+  .legend .item{display:flex;align-items:center;gap:10px}
+  .swatch{
+    width:22px;height:12px;border-radius:2px;display:inline-block;
+    border:1px solid rgba(0,0,0,0.08);
+  }
+  .sw-frozen{background:var(--frozen-bg);border-color:var(--frozen-border)}
+  .sw-train{background:var(--train-bg);border-color:var(--train-border)}
+  .sw-shape{background:var(--shape-bg);border-color:var(--shape-border)}
+  .sw-loss{background:var(--loss-bg);border-color:#B09ACC}
+
+  /* ========= FIGURE (each diagram is a full-width block) ========= */
+  .figure{
+    margin:96px 0 0;
+    padding-top:40px;
+    border-top:1px solid var(--rule);
+  }
+  .figure-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:40px;
+    align-items:start;
+    margin:96px 0 0;
+    padding-top:40px;
+    border-top:1px solid var(--rule);
+  }
+  .figure-grid.figure-grid-start{
+    border-top:none;
+    padding-top:0;
+    margin-top:40px;
+  }
+  .figure-grid .figure{
+    margin:0;
+    padding-top:0;
+    border-top:none;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+  }
+  .figure-grid .figure .caption{max-width:none}
+  .figure-grid .figure .fig-body{flex:1}
+  .figure-grid .figure.internal-compact .internal{
+    grid-template-columns:1fr;
+    gap:28px;
+  }
+  @media (max-width:1280px){
+    .figure-grid{grid-template-columns:1fr;gap:56px}
+  }
+  .fig-number{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:0.24em;text-transform:uppercase;
+    color:var(--train-accent);margin-bottom:6px;
+  }
+  .figure h2{
+    font-family:'Fraunces',serif;
+    font-weight:500;font-size:34px;
+    margin:0 0 6px;letter-spacing:-0.01em;
+  }
+  .figure h2 em{
+    font-style:italic;
+    color:var(--train-accent);
+    font-weight:400;
+    font-size:1em;
+  }
+  .figure .caption{
+    font-family:'Fraunces',serif;font-style:italic;
+    color:var(--muted);font-size:16px;
+    max-width:720px;margin-bottom:36px;
+  }
+
+  .fig-body{
+    background:var(--paper);
+    border:1px solid var(--rule);
+    border-radius:3px;
+    padding:44px 36px;
+  }
+
+  /* ========= SHARED SMALL PARTS ========= */
+  .shape{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    background:var(--shape-bg);color:var(--shape);
+    padding:3px 9px;border-radius:2px;
+    border:1px solid var(--shape-border);letter-spacing:0.02em;
+  }
+  .chip-tag{
+    position:absolute;top:-9px;left:22px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;letter-spacing:0.18em;text-transform:uppercase;
+    padding:3px 8px;border-radius:2px;color:#fff;
+  }
+
+  /* ========= DIAGRAM 1: SIMPLE FLOW ========= */
+  .simple-flow{
+    display:flex;flex-direction:column;align-items:center;gap:0;
+  }
+  .simple-flow .node{
+    background:var(--paper);border:1.5px solid var(--rule);
+    padding:16px 24px;border-radius:3px;
+    min-width:280px;text-align:center;
+    font-family:'Fraunces',serif;font-weight:600;font-size:18px;
+    position:relative;
+  }
+  .simple-flow .node.frozen{background:var(--frozen-bg);border-color:var(--frozen-border);color:var(--frozen-ink)}
+  .simple-flow .node.trainable{background:var(--train-bg);border-color:var(--train-border)}
+  .simple-flow .node.loss{background:var(--loss-bg);border-color:#B09ACC;color:var(--loss)}
+  .simple-flow .node .t{
+    display:block;font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:0.2em;text-transform:uppercase;
+    color:var(--muted);font-weight:500;margin-bottom:4px;
+  }
+  .simple-flow .node.frozen .t{color:var(--frozen-ink);opacity:0.7}
+  .simple-flow .node.trainable .t{color:var(--train-accent);opacity:0.85}
+  .simple-flow .node.loss .t{color:var(--loss);opacity:0.7}
+  .loss-formula{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    color:var(--loss);
+    font-size:14px;
+    line-height:1.45;
+    text-align:center;
+    white-space:nowrap;
+  }
+
+  .simple-flow .edge{
+    display:flex;flex-direction:column;align-items:center;
+    padding:10px 0;color:var(--ink-soft);
+  }
+  .simple-flow .edge .bar{
+    width:1px;height:18px;background:var(--ink-soft);position:relative;
+  }
+  .simple-flow .edge .bar::after{
+    content:"";position:absolute;bottom:-1px;left:-4px;
+    border-left:4.5px solid transparent;border-right:4.5px solid transparent;
+    border-top:7px solid var(--ink-soft);
+  }
+  .simple-flow .edge .tag{
+    margin-top:6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:var(--shape);
+    background:var(--shape-bg);padding:2px 8px;border-radius:2px;
+    border:1px solid var(--shape-border);
+  }
+  .simple-flow .edge .hint{
+    font-family:'Fraunces',serif;font-style:italic;
+    font-size:12px;color:var(--muted);margin-top:4px;
+  }
+  .simple-flow .pair{
+    display:flex;gap:18px;flex-wrap:wrap;justify-content:center;
+  }
+  .simple-flow .pair .node{min-width:220px;font-size:16px}
+  .simple-flow .merge-arrow{
+    font-family:'Fraunces',serif;font-style:italic;color:var(--muted);
+    font-size:12px;margin-top:4px;
+  }
+  .simple-flow .multi-in{
+    display:flex;flex-direction:column;gap:4px;align-items:center;
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+    padding:6px 0;
+  }
+  .simple-flow .multi-in b{color:var(--ink-soft);font-weight:500}
+
+  /* side channel: future_tokens bypass from future-SigLIP down to loss */
+  .simple-flow .flow-with-side{
+    position:relative;
+    display:flex;flex-direction:column;align-items:center;
+    width:100%;
+    padding:0 80px;   /* symmetric: reserve right for side rail, left to keep content centered */
+  }
+  .simple-flow .side-channel{
+    position:absolute;
+    top:0;bottom:0;
+    right:20px;
+    width:48px;
+    pointer-events:none;
+  }
+  .simple-flow .side-channel::before{
+    content:"";position:absolute;top:0;bottom:0;right:0;
+    width:1px;background:var(--ink-soft);
+  }
+  .simple-flow .side-channel::after{
+    content:"";position:absolute;bottom:-1px;right:-4px;
+    border-left:4.5px solid transparent;border-right:4.5px solid transparent;
+    border-top:7px solid var(--ink-soft);
+  }
+  .simple-flow .side-channel .side-label{
+    position:absolute;top:50%;right:8px;
+    transform:translateY(-50%);
+    writing-mode:vertical-rl;
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--shape);
+    background:var(--shape-bg);padding:6px 3px;border-radius:2px;
+    border:1px solid var(--shape-border);letter-spacing:0.02em;
+  }
+  .simple-flow .pair-tags{
+    display:flex;gap:18px;flex-wrap:wrap;justify-content:center;padding:6px 0 0;
+  }
+  .simple-flow .pair-tags .tag{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--shape);
+    background:var(--shape-bg);padding:2px 8px;border-radius:2px;
+    border:1px solid var(--shape-border);min-width:220px;text-align:center;
+  }
+  .simple-flow .pair-tags .tag.ground-truth{
+    color:var(--ink-soft);
+    background:#fff;
+    border-color:var(--rule);
+  }
+
+  /* ========= INTERNAL BREAKDOWN (shared) ========= */
+  .internal{
+    display:grid;grid-template-columns:1fr 320px;gap:36px;
+  }
+  @media (max-width:860px){
+    .internal{grid-template-columns:1fr}
+  }
+  .column-title{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;letter-spacing:0.22em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 14px;
+    padding-bottom:8px;border-bottom:1px dashed var(--rule);
+  }
+
+  .pipeline{display:flex;flex-direction:column}
+  .box{
+    background:var(--paper);border:1px solid var(--rule);
+    border-radius:2px;padding:12px 16px;
+    display:flex;align-items:center;gap:14px;
+    position:relative;
+  }
+  .box .num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;color:var(--train-accent);
+    width:26px;flex-shrink:0;
+  }
+  .box .body{flex:1;font-size:14px}
+  .box .body b{font-weight:600}
+  .box .body .op{
+    font-family:'JetBrains Mono',monospace;font-size:12px;
+    background:#F0ECE2;padding:1px 6px;border-radius:2px;color:var(--ink-soft);
+  }
+  .box .out{
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--shape);background:var(--shape-bg);
+    padding:2px 7px;border-radius:2px;border:1px solid var(--shape-border);
+    white-space:nowrap;
+  }
+  .box.note{
+    background:transparent;border:1px dashed var(--rule);
+    font-family:'Fraunces',serif;font-style:italic;
+    color:var(--muted);font-size:13px;
+  }
+  .box.note .num{color:var(--muted)}
+  .box.input{
+    background:var(--frozen-bg);border-color:var(--frozen-border);
+  }
+  .box.output{
+    background:var(--train-bg);border-color:var(--train-border);
+  }
+  .box.output .body{font-weight:600}
+  .box.loss-box{
+    background:var(--loss-bg);
+    border-color:#B09ACC;
+  }
+  .box.loss-box .num,
+  .box.loss-box .body{
+    color:var(--loss);
+  }
+  .box.loss-box .body{font-weight:600}
+  .drop{
+    display:flex;justify-content:center;padding:4px 0;
+  }
+  .drop::before{
+    content:"";width:1px;height:14px;background:var(--ink-soft);position:relative;
+  }
+  .drop::after{
+    content:"";border-left:4px solid transparent;border-right:4px solid transparent;
+    border-top:6px solid var(--ink-soft);margin-left:-4px;margin-top:14px;position:absolute;
+  }
+  .drop{position:relative}
+  .drop span{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    color:var(--muted);position:absolute;left:calc(50% + 12px);top:7px;
+    white-space:nowrap;
+  }
+
+  /* side notes column */
+  .side-notes{display:flex;flex-direction:column;gap:16px}
+  .side{
+    background:var(--aux-bg);border:1px solid var(--aux-border);
+    padding:14px 16px;border-radius:2px;
+  }
+  .side h4{
+    font-family:'Fraunces',serif;font-weight:600;font-size:14px;
+    margin:0 0 8px;
+  }
+  .side ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--ink-soft)}
+  .side li{margin:3px 0}
+  .side code{
+    font-family:'JetBrains Mono',monospace;font-size:11.5px;
+    background:#fff;padding:1px 5px;border-radius:2px;color:var(--ink-soft);
+  }
+  .side.frozen-side{background:var(--frozen-bg);border-color:var(--frozen-border)}
+
+  /* single transformer block detail (used in MotionEncoder & MotionDiT) */
+  .block-detail{
+    background:#fff;border:1px solid var(--rule);
+    border-radius:3px;padding:16px;margin-top:18px;
+  }
+  .block-detail .hd{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:0.18em;text-transform:uppercase;color:var(--train-accent);
+    margin-bottom:10px;
+  }
+  .block-detail .stack{display:flex;flex-direction:column;gap:6px}
+  .block-detail .unit{
+    padding:8px 12px;border-radius:2px;font-size:13px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .unit.norm{background:#F0ECE2;color:var(--ink-soft)}
+  .unit.attn{background:var(--train-bg);color:var(--train-accent);font-weight:600}
+  .unit.ffn{background:var(--shape-bg);color:var(--shape);font-weight:600}
+  .unit.cross{background:#F6EAE0;color:#8C4A2A;font-weight:600}
+  .unit.film{background:#EDE6F5;color:var(--loss);font-weight:600}
+  .unit .hint{
+    font-family:'Fraunces',serif;font-style:italic;font-size:11.5px;
+    opacity:0.75;font-weight:400;color:inherit;
+  }
+  .block-detail .residual{
+    text-align:center;font-family:'Fraunces',serif;font-style:italic;
+    font-size:11.5px;color:var(--muted);margin:4px 0;
+  }
+
+  /* page-break class for print */
+  @media print{
+    .figure{break-inside:avoid;page-break-inside:avoid}
+    body{background:#fff}
+  }
+
+  /* inputs row for diagram headers */
+  .io-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:'JetBrains Mono',monospace;font-size:11px;
+    color:var(--ink-soft);background:#F0ECE2;
+    padding:4px 10px;border-radius:2px;margin:2px 4px 2px 0;
+  }
+  .io-pill b{color:var(--ink);font-weight:600}
+
+  .io-row{margin-bottom:18px}
+  .io-row .label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);
+    margin-right:8px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="doc">
+    <h1>Motion<em>JEPA</em> &nbsp;·&nbsp; <span style="font-size:32px;color:var(--ink-soft);font-weight:400;font-style:italic;">Figure set</span></h1>
+    <div class="sub">One simple pipeline diagram, plus three internal breakdowns — one for each trainable or fixed module.</div>
+    <div class="meta">B · batch &nbsp;·&nbsp; S = 256 patches &nbsp;·&nbsp; E = 1152 dim &nbsp;·&nbsp; M motion tokens &nbsp;·&nbsp; D<sub>m</sub> motion dim &nbsp;·&nbsp; H hidden</div>
+  </header>
+
+  <div class="legend">
+    <div class="item"><span class="swatch sw-frozen"></span>Frozen module</div>
+    <div class="item"><span class="swatch sw-train"></span>Trainable module</div>
+    <div class="item"><span class="swatch sw-shape"></span>Tensor shape</div>
+    <div class="item"><span class="swatch sw-loss"></span>Training objective</div>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- FIGURE 1: SIMPLE OVERALL FLOW                         -->
+  <!-- ==================================================== -->
+  <div class="figure-grid figure-grid-start">
+  <section class="figure">
+    <div class="fig-number">Figure 1</div>
+    <h2>Motion <em>JEPA</em></h2>
+    <div class="caption"></div>
+
+    <div class="fig-body">
+      <div class="simple-flow">
+
+        <div class="pair">
+          <div class="node">
+            <span class="t">input</span>
+            I<sub>t</sub> · current frame
+          </div>
+          <div class="node">
+            <span class="t">input</span>
+            I<sub>t+k</sub> · future frame
+          </div>
+        </div>
+
+        <div class="edge">
+          <div class="bar"></div>
+          <div class="hint">each frame goes through its own FrozenSigLIP (shared weights)</div>
+        </div>
+
+        <div class="pair">
+          <div class="node frozen" style="min-width:220px;">
+            <span class="t">stage 1 &nbsp;·&nbsp; frozen</span>
+            FrozenSigLIP
+          </div>
+          <div class="node frozen" style="min-width:220px;">
+            <span class="t">stage 1 &nbsp;·&nbsp; frozen</span>
+            FrozenSigLIP
+          </div>
+        </div>
+
+        <div class="flow-with-side">
+
+          <div class="pair-tags">
+            <div class="tag">current_tokens &nbsp; (B, 256, 1152)</div>
+            <div class="tag">future_tokens &nbsp; (B, 256, 1152)</div>
+          </div>
+
+          <div class="edge">
+            <div class="bar"></div>
+            <div class="hint">shared weights &nbsp;·&nbsp; applied to each frame</div>
+          </div>
+
+          <div class="node trainable" style="min-width:320px;">
+            <span class="t">stage 2 &nbsp;·&nbsp; trainable</span>
+            MotionEncoder
+          </div>
+
+          <div class="edge">
+            <div class="bar"></div>
+            <div class="tag">motion_tokens &nbsp; (B, M, D<sub>m</sub>)</div>
+            <div class="hint">current_tokens and timestep k join as extra conditioning ↓</div>
+          </div>
+
+          <div class="multi-in">
+            <div><b>current_tokens</b> &nbsp;(B, 256, 1152) &nbsp; + &nbsp; <b>motion_tokens</b> &nbsp;(B, M, D<sub>m</sub>) &nbsp; + &nbsp; <b>timestep</b> &nbsp;k</div>
+          </div>
+
+          <div class="node trainable" style="min-width:320px;">
+            <span class="t">stage 3 &nbsp;·&nbsp; trainable</span>
+            MotionDiT &nbsp;
+          </div>
+
+          <div class="edge">
+            <div class="bar"></div>
+            <div class="pair-tags">
+              <div class="tag">predicted_future &nbsp; (B, 256, 1152)</div>
+              <div class="tag ground-truth">future_tokens &nbsp; (B, 256, 1152)</div>
+            </div>
+          </div>
+
+          <div class="node loss" style="min-width:320px;">
+            <span class="t">objective</span>
+            <span class="loss-formula">ℒ<sub>pred</sub> &nbsp;=&nbsp; MSE( predicted, &nbsp;token_norm( future_tokens ) )</span>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== -->
+  <!-- FIGURE 1b: DEPLOYMENT FLOW                            -->
+  <!-- ==================================================== -->
+  <section class="figure">
+    <div class="fig-number">Figure 1b</div>
+    <h2>Deployment &nbsp;<em>— extracting motion tokens</em></h2>
+    <div class="caption"></div>
+
+    <div class="fig-body">
+      <div class="simple-flow">
+
+        <div class="pair">
+          <div class="node">
+            <span class="t">input</span>
+            I<sub>t</sub> · current frame
+          </div>
+          <div class="node">
+            <span class="t">input</span>
+            I<sub>t+k</sub> · future frame
+          </div>
+        </div>
+
+        <div class="edge">
+          <div class="bar"></div>
+          <div class="hint">each frame goes through its own FrozenSigLIP (shared weights)</div>
+        </div>
+
+        <div class="pair">
+          <div class="node frozen" style="min-width:220px;">
+            <span class="t">stage 1 &nbsp;·&nbsp; frozen</span>
+            FrozenSigLIP
+          </div>
+          <div class="node frozen" style="min-width:220px;">
+            <span class="t">stage 1 &nbsp;·&nbsp; frozen</span>
+            FrozenSigLIP
+          </div>
+        </div>
+
+        <div class="flow-with-side">
+
+          <div class="pair-tags">
+            <div class="tag">current_tokens &nbsp; (B, 256, 1152)</div>
+            <div class="tag">future_tokens &nbsp; (B, 256, 1152)</div>
+          </div>
+
+          <div class="edge">
+            <div class="bar"></div>
+            <div class="hint">shared weights &nbsp;·&nbsp; applied to each frame</div>
+          </div>
+
+          <div class="node trainable" style="min-width:320px;">
+            <span class="t">stage 2 &nbsp;·&nbsp; trainable</span>
+            MotionEncoder
+          </div>
+
+          <div class="edge">
+            <div class="bar"></div>
+            <div class="tag">motion_tokens &nbsp; (B, M, D<sub>m</sub>)</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+  </div>
+
+  <!-- ==================================================== -->
+  <!-- FIGURE 2: FROZENSIGLIP INTERNALS                      -->
+  <!-- ==================================================== -->
+  <section class="figure">
+    <div class="fig-number">Figure 2</div>
+    <h2>FrozenSigLIP &nbsp;<em>internals</em></h2>
+    <div class="caption">A fixed SiglipVisionModel wrapped so that no gradient flows. It only exists to turn each frame into a patch-token grid of shape (B, 256, 1152).</div>
+
+    <div class="fig-body">
+      <div class="io-row">
+        <span class="label">input</span>
+        <span class="io-pill"><b>image</b> &nbsp;(B, 3, H, W)</span>
+      </div>
+
+      <div class="internal">
+        <div>
+          <div class="column-title">Forward pass</div>
+          <div class="pipeline">
+            <div class="box input">
+              <span class="num">00</span>
+              <span class="body">Raw image tensor</span>
+              <span class="out">(B, 3, H, W)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">01</span>
+              <span class="body">Resize to <b>224 × 224</b> &nbsp;<span class="op">bilinear</span></span>
+              <span class="out">(B, 3, 224, 224)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">02</span>
+              <span class="body"><b>Patch embedding</b> &nbsp;·&nbsp; Conv2d &nbsp;<span class="op">k=14, s=14</span> &nbsp;·&nbsp; flatten to sequence</span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">03</span>
+              <span class="body">Add learned <b>positional embedding</b></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">04</span>
+              <span class="body"><b>N × Transformer encoder blocks</b> &nbsp;<span class="op">LayerNorm + MHA + MLP</span></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">05</span>
+              <span class="body">Final <b>LayerNorm</b></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box output">
+              <span class="num">✓</span>
+              <span class="body">patch tokens &nbsp;—&nbsp; <i>state representation</i></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-notes">
+          <div class="side frozen-side">
+            <h4>Why frozen?</h4>
+            <ul>
+              <li>All parameters have <code>requires_grad = False</code></li>
+              <li>Runs under <code>torch.no_grad()</code> at training time</li>
+              <li>Acts as a fixed perceptual tokenizer — the model only learns how to <i>manipulate</i> these tokens, not how to produce them</li>
+            </ul>
+          </div>
+          <div class="side">
+            <h4>Key numbers</h4>
+            <ul>
+              <li>Image side &nbsp;·&nbsp; <code>224</code></li>
+              <li>Patch size &nbsp;·&nbsp; <code>14 × 14</code></li>
+              <li>Grid &nbsp;·&nbsp; <code>16 × 16 = 256</code></li>
+              <li>Embed dim &nbsp;·&nbsp; <code>1152</code></li>
+            </ul>
+          </div>
+          <div class="side">
+            <h4>Used twice</h4>
+            <ul>
+              <li>Same weights produce <code>current_tokens</code> and <code>future_tokens</code></li>
+              <li>Downstream trainable modules only ever see these two token tensors — never the raw pixels</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== -->
+  <!-- FIGURE 3: MOTIONENCODER INTERNALS                     -->
+  <!-- ==================================================== -->
+  <div class="figure-grid">
+  <section class="figure internal-compact">
+    <div class="fig-number">Figure 3</div>
+    <h2>MotionEncoder &nbsp;<em>internals</em></h2>
+    <div class="caption"> </div>
+
+    <div class="fig-body">
+      <div class="io-row">
+        <span class="label">inputs</span>
+        <span class="io-pill"><b>current_tokens</b> &nbsp;(B, 256, 1152)</span>
+        <span class="io-pill"><b>future_tokens</b> &nbsp;(B, 256, 1152)</span>
+      </div>
+
+      <div class="internal">
+        <div>
+          <div class="column-title">Forward pass</div>
+          <div class="pipeline">
+
+            <div class="box input">
+              <span class="num">00</span>
+              <span class="body">paired state tokens</span>
+              <span class="out">2 × (B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">01</span>
+              <span class="body"><b>Δ = future − current</b> &nbsp;<span class="op">elementwise</span></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">02</span>
+              <span class="body"><b>Spatial pool</b> &nbsp;— average over 256 patches into a single global delta token &nbsp;<span class="op"></span></span>
+              <span class="out">(B, 1, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">03</span>
+              <span class="body"><b>Linear projection</b> &nbsp;<span class="op">1152 → H</span></span>
+              <span class="out">(B, 1, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">04</span>
+              <span class="body"><b>Add state_delta</b> &nbsp;— project proprio delta to H and add to the pooled delta token &nbsp;<span class="op"></span></span>
+              <span class="out">(B, 1, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">05</span>
+              <span class="body">Append <b>M learnable query tokens</b> at the tail &nbsp;·&nbsp; these are the read-out slots</span>
+              <span class="out">(B, 1 + M, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">06</span>
+              <span class="body"><b>N × Causal Transformer blocks</b> &nbsp;— see block detail →</span>
+              <span class="out">(B, 1 + M, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">07</span>
+              <span class="body">Slice the <b>last M positions</b> &nbsp;·&nbsp; project to <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">motion_dim</code></span>
+              <span class="out">(B, M, D<sub>m</sub>)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box output">
+              <span class="num">✓</span>
+              <span class="body"><b>motion_tokens</b></span>
+              <span class="out">(B, M, D<sub>m</sub>)</span>
+            </div>
+
+          </div>
+
+          <!-- Single causal block detail -->
+          <div class="block-detail">
+            <div class="hd">one causal transformer block &nbsp;·&nbsp; Llama-style</div>
+            <div class="stack">
+              <div class="unit norm">RMSNorm <span class="hint">pre-norm</span></div>
+              <div class="unit attn">Causal Self-Attention <span class="hint">1D RoPE · mask lower-triangular</span></div>
+              <div class="residual">+ residual</div>
+              <div class="unit norm">RMSNorm <span class="hint">pre-norm</span></div>
+              <div class="unit ffn">SwiGLU FFN <span class="hint">gated MLP</span></div>
+              <div class="residual">+ residual</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-notes">
+          <div class="side">
+            <h4>Why learned queries?</h4>
+            <ul>
+              <li>Causal attention lets the <b>M query tokens</b> at the tail attend to every delta token before them</li>
+              <li>They function as <b>read-out heads</b> — each one summarises a different aspect of the current→future change</li>
+              <li>Everything before them is never required downstream, so the model is free to use them as a pure bottleneck</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================================================== -->
+  <!-- FIGURE 4: MOTIONDIT INTERNALS                         -->
+  <!-- ==================================================== -->
+  <section class="figure internal-compact">
+    <div class="fig-number">Figure 4</div>
+    <h2>MotionDiT &nbsp;<em>internals</em></h2>
+    <div class="caption"></div>
+
+    <div class="fig-body">
+      <div class="io-row">
+        <span class="label">inputs</span>
+        <span class="io-pill"><b>current_tokens</b> &nbsp;(B, 256, 1152)</span>
+        <span class="io-pill"><b>motion_tokens</b> &nbsp;(B, M, D<sub>m</sub>)</span>
+        <span class="io-pill"><b>timestep</b> &nbsp;k</span>
+      </div>
+
+      <div class="internal">
+        <div>
+          <div class="column-title">Forward pass</div>
+          <div class="pipeline">
+
+            <div class="box input">
+              <span class="num">00</span>
+              <span class="body">current tokens + motion tokens + k</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">01</span>
+              <span class="body"><b>LayerNorm</b> on current tokens</span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">02</span>
+              <span class="body"><b>Linear projection</b> &nbsp;<span class="op">1152 → H</span> &nbsp;·&nbsp; add <b>patch positional encoding</b></span>
+              <span class="out">(B, 256, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box note">
+              <span class="num">03</span>
+              <span class="body">Timestep <b>k</b> &nbsp;→&nbsp; <code style="font-family:'JetBrains Mono',monospace;font-size:12px;">Sinusoidal Timestep Embedding</code> &nbsp;→&nbsp; produces AdaLN-zero scale/shift for every block</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">04</span>
+              <span class="body"><b>N × DiT blocks</b> &nbsp;— see block detail →</span>
+              <span class="out">(B, 256, H)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">05</span>
+              <span class="body"><b>Tied output projection</b> <i>(gated)</i> &nbsp;<span class="op">r = α W<sup>T</sup>x</span><br><span style="opacity:.92">W ∈ ℝ<sup>H×1152</sup>, shared with step 02 &nbsp;·&nbsp; α ∈ ℝ, &nbsp;α<sub>0</sub> = 0</span></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box">
+              <span class="num">06</span>
+              <span class="body"><b>Residual skip connection</b> &nbsp;<span class="op">x̂ = z + r</span><br><span style="opacity:.92">z = LN(x<sub>0</sub>) &nbsp;from step 01 &nbsp;·&nbsp; α<sub>0</sub> = 0 ⟹ r = 0 ⟹ x̂ = z</span></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+            <div class="drop"></div>
+
+            <div class="box loss-box">
+              <span class="num">✓</span>
+              <span class="body"><span class="loss-formula">ℒ<sub>pred</sub> &nbsp;=&nbsp; MSE( predicted, &nbsp;token_norm( future_tokens ) )</span></span>
+              <span class="out">(B, 256, 1152)</span>
+            </div>
+          </div>
+
+          <!-- Single DiT block detail -->
+          <div class="block-detail">
+            <div class="hd">one DiT block &nbsp;·&nbsp; motion_mode = cross / film / cross+film</div>
+            <div class="stack">
+              <div class="unit norm">AdaLN-zero modulation <span class="hint">scale &amp; shift from timestep k</span></div>
+              <div class="unit attn">Self-Attention <span class="hint">over 256 patch tokens</span></div>
+              <div class="residual">+ residual</div>
+              <div class="unit cross">Cross-Attention → motion_tokens <span class="hint">if motion_mode includes “cross”</span></div>
+              <div class="unit film">FiLM from pooled motion <span class="hint">if motion_mode includes “film”</span></div>
+              <div class="residual">+ residual</div>
+              <div class="unit norm">AdaLN-zero modulation</div>
+              <div class="unit ffn">FFN <span class="hint">pointwise MLP</span></div>
+              <div class="residual">+ residual</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side-notes">
+          <div class="side">
+            <h4>Residual prediction</h4>
+            <ul>
+              <li>The decoder never outputs an <i>absolute</i> future — it outputs a correction to the current token</li>
+              <li>α<sub>0</sub> = 0 ⟹ r = 0 ⟹ x̂ = z = LN(x<sub>0</sub>) &nbsp;— the decoder starts as a normalized identity copy and learns corrections</li>
+              <li>Tied input / output projections cut parameters and stabilise learning in the token space</li>
+            </ul>
+          </div>
+          <div class="side">
+            <h4>Motion injection modes</h4>
+            <ul>
+              <li><b>cross</b> — motion tokens act as K/V in cross-attention; every patch attends to the full motion code</li>
+              <li><b>film</b> — pool M tokens to a single vector, then channel-wise shift + scale</li>
+              <li><b>cross + film</b> — both injections in the same block</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  </div>
+
+</div>
+</body>
+</html>
