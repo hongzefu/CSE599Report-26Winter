@@ -203,7 +203,9 @@ memory state $\mathbf{M}_t$:
   a_t \;\sim\; \pi\!\left(\cdot \;\middle|\; l,\; \mathbf{o}_t,\; \mathbf{M}_t\right),
   \label{eq:mem-policy}
 \end{equation}
-where $\mathbf{M}_t$ summarizes past observations and actions.
+where $\mathbf{M}_t$ is the length-$B$ projection of the causal prefix
+$\mathcal{M}_t$ (Eq.~\ref{eq:mem-causal}), containing only observations and
+motion windows that have fully elapsed before step $t$.
 For fair comparison across designs, we allocate a fixed memory token budget $B$
 for all memory-based models: each representation produces at most $B$ tokens;
 if fewer are available, the sequence is zero-padded.
@@ -364,6 +366,8 @@ $\mathbb{R}^{1\times E}$ and projects it to the encoder width $H$,
 self-attention, SwiGLU FFN) so that each query attends to the fused
 delta token before it. The last $M$ positions are projected to motion
 dimension $D_m$ and constitute $m_t$.
+Since $m_t$ requires both endpoints of window $[t,\,t\!+\!\Delta]$, it becomes
+causally available only at step $t\!+\!\Delta$.
 
 \paragraph{Memory sequence assembly.}
 The final memory for an episode is the time-ordered concatenation
@@ -371,10 +375,18 @@ The final memory for an episode is the time-ordered concatenation
   \mathcal{M} \;=\; \big[\, x_{k_0}^{\mathrm{full}},\; m_{0},\; m_{\Delta},\; \dots,\; x_{k_i}^{\mathrm{TD}},\; \dots \,\big],
 \end{equation}
 where each entry carries its source timestamp as a positional tag.
-Compared to the naive grid of $T\!\cdot\!S$ patch tokens this yields a
-roughly order-of-magnitude reduction in token count while preserving
-both long-range scene anchors and short-range dynamics (concrete ratios
-are reported in Sec.~\ref{sec:impl}).
+At policy step $\tau$, the policy receives the causally valid prefix
+\begin{equation}
+  \mathcal{M}_\tau \;=\;
+    \bigl\{\,x_{k_j}^{\cdot} : k_j \leq \tau\,\bigr\}
+    \;\cup\;
+    \bigl\{\,m_t : t + \Delta \leq \tau\,\bigr\},
+  \label{eq:mem-causal}
+\end{equation}
+i.e.\ keyframe tokens whose frame index is at most $\tau$, and motion tokens
+whose entire window $[t,\,t\!+\!\Delta]$ has elapsed by $\tau$.
+The sequence $\mathcal{M}_\tau$ grows monotonically: at each new step the
+pipeline appends newly completed tokens without recomputing earlier ones.
 
 \paragraph{Training objective.}
 Keyframe selection and TokenDrop are training-free, so the only learnable
@@ -470,8 +482,12 @@ detector, and the TokenDrop module are training-free throughout. After
 Stage~1, $g_\phi$ is discarded and $f_\theta$ is frozen.
 
 \emph{Stage 2: VLA fine-tuning.} For every demonstration episode we
-\emph{pre-compute and cache} the memory sequence
-$\mathcal{M}\!\to\!\mathbf{M}_t$ using the frozen pipeline of Stage~1.
+\emph{pre-compute and cache} the full memory sequence $\mathcal{M}$
+using the frozen pipeline of Stage~1.
+At each training step $t$ we extract the causally valid prefix
+$\mathcal{M}_t$ (Eq.~\ref{eq:mem-causal}) from the cached sequence and
+project it to $\mathbf{M}_t \in \mathbb{R}^{B\times d}$; no future motion
+tokens (i.e.\ windows with $t'\!+\!\Delta > t$) are visible to the policy.
 SigLIP2 visual tokens are likewise pre-computed and cached, following the
 $\pi_{0.5}$ recipe. Trainable parameters in
 Stage~2 are exactly: (i) the VLM expert, (ii) the action expert, and (iii)
