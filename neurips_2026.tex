@@ -311,19 +311,11 @@ by frozen perception backbones at inference time, processing the current
 video stream and a synchronized proprioceptive trace independently of the
 VLA; no gradient flows back into these encoders during VLA training.
 
-\paragraph{Notation.}
-Let $\{I_t\}_{t=0}^{T-1}$ be the input frames and $\{s_t\}$ the
-proprioceptive state. We use a frozen vision tokenizer
-$\Phi_{\mathrm{SigLIP}}\!:\!\mathbb{R}^{3\times H\times W}\!\to\!\mathbb{R}^{S\times E}$
-with $S\!=\!256$ patches and $E\!=\!1152$. A separate frozen image--text
-backbone $\Phi_{\mathrm{CLIP}}$ is used only as a scalar similarity
-function for keyframe detection. We write
-$x_t = \Phi_{\mathrm{SigLIP}}(I_t) \in \mathbb{R}^{S\times E}$.
-
 \paragraph{Keyframe detection.}
-Keyframes mark moments when the scene changes meaningfully (object pickup,
-contact events, viewpoint shifts). We score each frame by the smoothed
-discrete derivative of CLIP image embeddings,
+Let $\{I_t\}_{t=0}^{T-1}\!\subset\!\mathbb{R}^{3\times H\times W}$ denote the input RGB frames.
+Keyframes mark moments of meaningful scene change (object pickup,
+contact events, viewpoint shifts). Each frame is scored by the smoothed
+discrete derivative of a frozen CLIP encoder $\Phi_{\mathrm{CLIP}}$:
 \begin{equation}
   d_t \;=\; \big\| \Phi_{\mathrm{CLIP}}(I_t) - \Phi_{\mathrm{CLIP}}(I_{t-1}) \big\|_2,
   \qquad
@@ -351,9 +343,10 @@ full ($S$ tokens); each subsequent keyframe contributes
 $|\mathcal{P}_i|\!\le\!S$ tokens. TokenDrop is also parameter-free.
 
 \paragraph{Motion tokens (MotionJEPA encoding).}
+Let $\Phi_{\mathrm{SigLIP}}\!:\!\mathbb{R}^{3\times H\times W}\!\to\!\mathbb{R}^{S\times E}$ ($S\!=\!256$ patches, $E\!=\!1152$) be the frozen SigLIP tokenizer, and let $x_t \!=\! \Phi_{\mathrm{SigLIP}}(I_t)\in\mathbb{R}^{S\times E}$; $\{s_t\}$ denotes the proprioceptive state sequence.
 Independently of keyframe placement, we tile the video with non-overlapping
-windows of fixed stride $\Delta$ (we use $\Delta=8$). For each window
-$[t, t\!+\!\Delta]$ a trainable \emph{MotionEncoder}
+windows of fixed stride $\Delta$ (we use $\Delta\!=\!8$). For each window
+$[t,\, t\!+\!\Delta]$ a trainable \emph{MotionEncoder}
 $f_\theta$ compresses the visual change into $M$ latent tokens
 $m_{t}\!\in\!\mathbb{R}^{M\times D_m}$:
 \begin{equation}
