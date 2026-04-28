@@ -197,13 +197,27 @@ language commands, we keep the VLM as a pure feature extractor; this leaves
 a clean interface at which memory can be injected.
 
 \paragraph{Memory token block.}
+To enable history-dependent reasoning, we augment the policy with an explicit
+memory state $\mathbf{M}_t$:
+\begin{equation}
+  a_t \;\sim\; \pi\!\left(\cdot \;\middle|\; l,\; \mathbf{o}_t,\; \mathbf{M}_t\right),
+  \label{eq:mem-policy}
+\end{equation}
+where $\mathbf{M}_t$ summarizes past observations and actions.
+For fair comparison across designs, we allocate a fixed memory token budget $B$
+for all memory-based models: each representation produces at most $B$ tokens;
+if fewer are available, the sequence is zero-padded.
+Thus all memory variants share the same interface
+\begin{equation}
+  \mathbf{M}_t \;\in\; \mathbb{R}^{B\times d}.
+  \label{eq:mem-interface}
+\end{equation}
 We expose the memory sequence $\mathcal{M}$ produced in
-Sec.~\ref{sec:memory} to the backbone as a single token block
-$\mathbf{M}_t \in \mathbb{R}^{B\times d}$ with fixed budget $B$ (zero-padded
-when fewer tokens are available). The two-token-kind structure of
-$\mathcal{M}$ — TokenDropped keyframe patches and MotionJEPA motion tokens —
-is opaque to the backbone: from the policy's perspective $\mathbf{M}_t$ is
-just a length-$B$ sequence of $d$-dimensional vectors carrying time tags.
+Sec.~\ref{sec:memory} to the backbone as this token block.
+The two-token-kind structure of $\mathcal{M}$ — TokenDropped keyframe patches
+and MotionJEPA motion tokens — is opaque to the backbone: from the policy's
+perspective $\mathbf{M}_t$ is just a length-$B$ sequence of $d$-dimensional
+vectors carrying time tags.
 
 \paragraph{Three integration mechanisms.}
 We systematically study three places at which $\mathbf{M}_t$ can enter the
@@ -292,9 +306,10 @@ The memory passed to the VLA is a sparse, time-aligned sequence of two
 complementary token kinds drawn from a single robot video of length $T$:
 (i) \emph{keyframe tokens}, which anchor the scene at semantic transitions,
 and (ii) \emph{motion tokens}, fixed-stride summaries of short-range
-visual change produced by a JEPA-style encoder. Both kinds are computed
-offline from the raw video and a synchronized proprioceptive trace; no
-gradient flows back into the perception backbones during VLA training.
+visual change produced by a JEPA-style encoder. Both kinds are produced
+by frozen perception backbones at inference time, processing the current
+video stream and a synchronized proprioceptive trace independently of the
+VLA; no gradient flows back into these encoders during VLA training.
 
 \paragraph{Notation.}
 Let $\{I_t\}_{t=0}^{T-1}$ be the input frames and $\{s_t\}$ the
