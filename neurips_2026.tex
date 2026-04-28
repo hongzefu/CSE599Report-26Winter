@@ -161,6 +161,131 @@
   \label{fig:overview}
 \end{figure}
 
+\subsection{Memory Token Generation and Training}
+\label{sec:memory}
+% Scope: this subsection describes how the per-episode memory tokens consumed
+% by the downstream VLA are produced and trained. The downstream injection
+% mechanism (how the VLA attends to or interleaves these tokens) is described
+% in Sec.~\ref{sec:arch}.
+
+The memory passed to the VLA is a sparse, time-aligned sequence of two
+complementary token kinds drawn from a single robot video of length $T$:
+(i) \emph{keyframe tokens}, which anchor the scene at semantic transitions,
+and (ii) \emph{motion tokens}, fixed-stride summaries of short-range
+visual change produced by a JEPA-style encoder. Both kinds are computed
+offline from the raw video and a synchronized proprioceptive trace; no
+gradient flows back into the perception backbones during VLA training.
+
+\paragraph{Notation.}
+Let $\{I_t\}_{t=0}^{T-1}$ be the input frames and $\{s_t\}$ the
+proprioceptive state. We use a frozen vision tokenizer
+$\Phi_{\mathrm{SigLIP}}\!:\!\mathbb{R}^{3\times H\times W}\!\to\!\mathbb{R}^{S\times E}$
+with $S\!=\!256$ patches and $E\!=\!1152$. A separate frozen image--text
+backbone $\Phi_{\mathrm{CLIP}}$ is used only as a scalar similarity
+function for keyframe detection. We write
+$x_t = \Phi_{\mathrm{SigLIP}}(I_t) \in \mathbb{R}^{S\times E}$.
+
+\paragraph{Keyframe detection.}
+Keyframes mark moments when the scene changes meaningfully (object pickup,
+contact events, viewpoint shifts). We score each frame by the smoothed
+discrete derivative of CLIP image embeddings,
+\begin{equation}
+  d_t \;=\; \big\| \Phi_{\mathrm{CLIP}}(I_t) - \Phi_{\mathrm{CLIP}}(I_{t-1}) \big\|_2,
+  \qquad
+  \tilde d_t \;=\; (k_{\mathrm{rbf}} * d)_t,
+\end{equation}
+where $k_{\mathrm{rbf}}$ is a small RBF kernel that suppresses frame-rate
+jitter. Keyframes are local maxima of $\tilde d_t$ exceeding a threshold
+$\tau$, with the first frame $t=0$ always retained as an anchor. The
+detector is purely deterministic preprocessing and has no learnable
+parameters; $\tau$ is a single hyperparameter chosen so that the average
+inter-keyframe gap is $\sim\!32$ frames.
+
+\paragraph{Keyframe TokenDrop.}
+Storing the full $S$-token grid for every keyframe is wasteful: most of
+the image (background, robot base, table) repeats across keyframes. For
+every keyframe $k_i$ with $i\!>\!0$ we retain only the patches that
+actually changed relative to its \emph{previous} keyframe $k_{i-1}$.
+Concretely, on the $16\!\times\!16$ patch grid we mark a patch as
+\emph{significant} if its mean per-pixel absolute difference between
+$I_{k_i}$ and $I_{k_{i-1}}$ exceeds $\delta$, and we keep the union of
+all significant patches together with the patches lying inside their
+axis-aligned bounding rectangle (the latter preserves spatial contiguity
+for downstream attention). The first keyframe $k_0$ is always kept in
+full ($S$ tokens); each subsequent keyframe contributes
+$|\mathcal{P}_i|\!\le\!S$ tokens. TokenDrop is also parameter-free.
+
+\paragraph{Motion tokens (MotionJEPA encoding).}
+Independently of keyframe placement, we tile the video with non-overlapping
+windows of fixed stride $\Delta$ (we use $\Delta=8$). For each window
+$[t, t\!+\!\Delta]$ a trainable \emph{MotionEncoder}
+$f_\theta$ compresses the visual change into $M$ latent tokens
+$m_{t}\!\in\!\mathbb{R}^{M\times D_m}$:
+\begin{equation}
+  m_t \;=\; f_\theta\!\left(\, x_t,\; x_{t+\Delta},\; \Delta s_t \,\right),
+  \qquad \Delta s_t = s_{t+\Delta} - s_t.
+\end{equation}
+Internally, $f_\theta$ (i) computes the patchwise visual delta
+$\Delta x = x_{t+\Delta} - x_t \in \mathbb{R}^{S\times E}$, (ii) spatially
+average-pools $\Delta x$ to a single global delta token in
+$\mathbb{R}^{1\times E}$ and projects it to the encoder width $H$,
+(iii) projects $\Delta s_t$ to $H$ and adds it to the pooled delta token
+(this is the only place proprioception enters the memory pipeline),
+(iv) appends $M$ learned read-out queries at the tail, and
+(v) runs a small causal transformer (RMSNorm, 1D-RoPE causal
+self-attention, SwiGLU FFN) so that each query attends to the fused
+delta token before it. The last $M$ positions are projected to motion
+dimension $D_m$ and constitute $m_t$.
+
+\paragraph{Memory sequence assembly.}
+The final memory for an episode is the time-ordered concatenation
+\begin{equation}
+  \mathcal{M} \;=\; \big[\, x_{k_0}^{\mathrm{full}},\; m_{0},\; m_{\Delta},\; \dots,\; x_{k_i}^{\mathrm{TD}},\; \dots \,\big],
+\end{equation}
+where each entry carries its source timestamp as a positional tag.
+Compared to the naive grid of $T\!\cdot\!S$ patch tokens this yields a
+roughly order-of-magnitude reduction in token count while preserving
+both long-range scene anchors and short-range dynamics (concrete ratios
+are reported in Sec.~\ref{sec:impl}).
+
+\paragraph{Training objective.}
+Keyframe selection and TokenDrop are training-free, so the only learnable
+parameters in the memory pipeline are those of the MotionEncoder
+$f_\theta$. We train $f_\theta$ jointly with an auxiliary
+\emph{MotionDiT} decoder $g_\phi$ under a JEPA-style future-prediction
+objective on the SigLIP token space. Given $(x_t, x_{t+\Delta})$, we
+sample a diffusion-style timestep $k\!\sim\!\mathcal{U}\{1,\dots,K\}$
+and ask $g_\phi$ to predict the (token-normalized) future tokens from
+the current tokens, the motion code, and $k$:
+\begin{equation}
+  \hat x_{t+\Delta}^{(k)} \;=\; g_\phi\!\left(\, x_t,\; m_t,\; k \,\right),
+  \qquad m_t = f_\theta(x_t, x_{t+\Delta}, \Delta s_t),
+\end{equation}
+\begin{equation}
+  \mathcal{L}_{\mathrm{pred}} \;=\;
+  \mathbb{E}_{t,\,k}\!\left[\,
+    \big\| \hat x_{t+\Delta}^{(k)} \;-\; \mathrm{TokenNorm}(x_{t+\Delta}) \big\|_2^2
+  \,\right].
+\end{equation}
+$\mathrm{TokenNorm}$ is a per-feature standardization applied to the
+target SigLIP tokens to stabilize the regression target. $g_\phi$ is a
+small DiT with AdaLN-zero timestep modulation and a tied gated
+input/output projection initialized to zero, so at $k\!=\!0$ the decoder
+acts as a normalized identity copy of $x_t$ and only learns residual
+corrections driven by $m_t$. This zero-initialized residual head is the
+sole reason the loss is stable when $f_\theta$ is randomly initialized:
+gradients flow through $g_\phi$ into $f_\theta$ only via the
+correction term, forcing $m_t$ to encode exactly the information needed
+to bridge $x_t \to x_{t+\Delta}$.
+
+Crucially, $g_\phi$ exists only during pre-training. At deployment the
+robot has already executed both endpoints of every motion window, so
+memory tokens are produced by a single forward pass through
+$\Phi_{\mathrm{SigLIP}}$ and $f_\theta$; no decoding is performed and
+$g_\phi$ is discarded. The trained $f_\theta$, together with the
+parameter-free keyframe and TokenDrop modules, is what ultimately writes
+into $\mathcal{M}$.
+
 \subsection{Training Objective}
 \label{sec:objective}
 % TODO: loss formulation + equations.
