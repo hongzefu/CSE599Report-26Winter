@@ -154,6 +154,22 @@
 \label{sec:arch}
 % TODO: components + data flow.
 
+To enable history-dependent reasoning, we augment the policy with an explicit
+memory state $\mathcal{M}_t$:
+\begin{equation}
+  a_t \;\sim\; \pi\!\left(\cdot \;\middle|\; l,\; o_t,\; \mathcal{M}_t\right).
+\end{equation}
+
+\paragraph{Memory token block.}
+We expose the memory sequence $\mathcal{M}$ produced in Sec.~\ref{sec:memory}
+to the backbone as a single token block
+$\mathcal{M}_t \in \mathbb{R}^{B \times d}$ with fixed budget $B$
+(zero-padded when fewer tokens are available).
+The two-token-kind structure of $\mathcal{M}$ --- TokenDropped keyframe patches
+and MotionJEPA motion tokens --- is opaque to the backbone: from the policy's
+perspective $\mathcal{M}_t$ is just a length-$B$ sequence of $d$-dimensional
+vectors carrying time tags.
+
 \begin{figure}[t]
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
