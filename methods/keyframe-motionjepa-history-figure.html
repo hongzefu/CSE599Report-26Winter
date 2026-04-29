@@ -176,47 +176,51 @@ body::before{
 .mt-tok-mini{display:flex;gap:5px;align-items:center;justify-content:center;flex-wrap:wrap}
 .mt-tok-mini .mtok{width:9px;height:22px;border-radius:2px;background:var(--motion)}
 
-/* === History sequence (vertical) === */
+/* === History sequence (vertical, fixed-height rows) === */
 .history{
   background:linear-gradient(180deg,#fff7e6 0%,#fff 50%,#e8f0fb 100%);
   border:1.5px solid var(--rule);border-radius:12px;
-  padding:18px 18px 16px;height:100%;display:flex;flex-direction:column;
+  padding:14px 16px 14px;height:100%;display:flex;flex-direction:column;
+  overflow:hidden;
 }
 .history-head{
   font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink-soft);margin-bottom:14px;
+  text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;
   display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;
 }
 .history-head strong{color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:none;font-size:11px}
-.history-body{position:relative;flex:1;min-height:0}
 
-.history-axis{position:absolute;left:64px;top:6px;bottom:6px;width:1.5px;background:rgba(74,63,53,.22)}
-.h-tick{position:absolute;left:60px;width:9px;height:1px;background:rgba(74,63,53,.18)}
-.h-tick.major{width:13px;background:rgba(74,63,53,.32);left:58px}
-.h-tick.kf{width:18px;background:rgba(216,84,0,.4);height:2px;left:55px}
-.h-tick.mt{width:15px;background:rgba(47,111,214,.42);left:57px}
-.h-tlabel{position:absolute;left:0;width:50px;text-align:right;
-  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);
-  transform:translateY(-50%);line-height:1;}
-.h-tlabel.kf{color:var(--accent);font-weight:700}
-.h-tlabel.mt{color:var(--motion);font-weight:600}
-
-.h-event{position:absolute;left:78px;right:6px;transform:translateY(-50%);
-  display:flex;align-items:center;gap:9px;}
-.h-event .h-tok{
-  background:#fff;border:1.5px solid var(--rule);border-radius:6px;
-  padding:5px;display:flex;align-items:center;justify-content:center;
-  flex:none;
+.history-body{
+  display:grid;grid-template-columns:46px 1fr;
+  row-gap:6px;column-gap:10px;align-content:start;
+  flex:1;min-height:0;
 }
-.h-event.kf .h-tok{border-color:var(--accent);background:#fffaf3;box-shadow:0 2px 8px -3px rgba(216,84,0,.25)}
-.h-event.mt .h-tok{border-color:var(--motion);background:#f4f8ff}
-.h-event .h-tok svg{display:block;width:48px;height:48px}
-.h-event.mt .h-tok{padding:5px 6px}
-.h-event.mt .mtb{width:14px;height:30px;border-radius:2px;background:var(--motion)}
-.h-event .h-cap{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);line-height:1.4}
-.h-event.kf .h-cap{color:var(--accent);font-weight:700}
-.h-event.mt .h-cap{color:var(--motion);font-weight:500}
-.h-event .h-cap b{display:block;font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:13px;letter-spacing:0;margin-bottom:1px}
+.h-tlabel{
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);
+  text-align:right;align-self:center;line-height:1;font-weight:600;letter-spacing:.04em;
+  padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.55);
+  border:1px solid var(--rule);
+}
+.h-tlabel.kf{color:var(--accent);border-color:rgba(216,84,0,.35);background:#fff5e9}
+.h-tlabel.mt{color:var(--motion);border-color:rgba(47,111,214,.35);background:#eef3fc}
+
+.h-event{
+  display:flex;align-items:center;gap:10px;
+  background:#fff;border:1.5px solid var(--rule);border-radius:7px;
+  padding:5px 9px;min-height:38px;
+}
+.h-event.kf{border-color:var(--accent);background:#fffaf3;box-shadow:0 1px 4px -2px rgba(216,84,0,.25)}
+.h-event.mt{border-color:var(--motion);background:#f4f8ff}
+.h-event .h-tok{
+  display:flex;align-items:center;justify-content:center;flex:none;
+  width:34px;height:34px;
+}
+.h-event .h-tok svg{display:block;width:100%;height:100%}
+.h-event.mt .mtb{width:14px;height:26px;border-radius:2px;background:var(--motion)}
+.h-event .h-cap{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);line-height:1.35;flex:1;min-width:0}
+.h-event.kf .h-cap{color:var(--accent)}
+.h-event.mt .h-cap{color:var(--motion)}
+.h-event .h-cap b{display:inline-block;font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:12.5px;letter-spacing:0;margin-right:6px}
 .h-event.kf .h-cap b{color:var(--accent)}
 .h-event.mt .h-cap b{color:var(--motion)}
 
@@ -703,41 +707,18 @@ function tokenCount(ev){
 
 (function buildHistory(){
   const body = document.getElementById('historyBody');
-  // axis
-  const axis = document.createElement('div');
-  axis.className = 'history-axis';
-  body.appendChild(axis);
-
-  // baseline ticks
-  const eventTs = new Map(events.map(ev => [ev.t, ev.type]));
-  for(let t=0;t<T;t++){
-    if(eventTs.has(t)) continue;
-    const tick = document.createElement('div');
-    tick.className = 'h-tick' + (t%8===0 || t===T-1 ? ' major' : '');
-    tick.style.top = `${(t/(T-1))*100}%`;
-    body.appendChild(tick);
-  }
-
-  // events
   events.forEach(ev => {
-    const tick = document.createElement('div');
-    tick.className = 'h-tick ' + ev.type;
-    tick.style.top = `${(ev.t/(T-1))*100}%`;
-    body.appendChild(tick);
-
     const lab = document.createElement('div');
     lab.className = 'h-tlabel ' + ev.type;
-    lab.style.top = `${(ev.t/(T-1))*100}%`;
     lab.textContent = `t=${ev.t}`;
     body.appendChild(lab);
 
     const block = document.createElement('div');
     block.className = 'h-event ' + ev.type;
-    block.style.top = `${(ev.t/(T-1))*100}%`;
     const tokSvg = ev.type === 'mt' ? `<div class="mtb"></div>` : historyTokSVG(ev);
     const cap = ev.type === 'mt'
-      ? `<b>MT@${ev.t}</b> motion token<br>window [${ev.t0}→${ev.t1}] · M=1`
-      : `<b>KF@${ev.t}</b> keyframe tokens<br>${tokenCount(ev)} patches kept`;
+      ? `<b>MT@${ev.t}</b>motion · window [${ev.t0}→${ev.t1}] · M=1`
+      : `<b>KF@${ev.t}</b>keyframe · ${tokenCount(ev)} patches kept`;
     block.innerHTML = `
       <div class="h-tok">${tokSvg}</div>
       <div class="h-cap">${cap}</div>
@@ -795,12 +776,23 @@ function tokenCount(ev){
     </defs>
   `;
 
-  // Arrow definitions
+  // Arrow definitions — coordinates use the canvas viewBox (1216 × 780)
+  // Block left/right/top/bottom anchors:
+  //   Input strip:    bottom y=118, x range 0..1216
+  //   CLIP block:     left=0   top=148  right=240  bottom=376
+  //   TokenDrop:      left=266 top=148  right=546  bottom=376
+  //   KF tok out:     left=572 top=148  right=732  bottom=376
+  //   Frame pairs:    left=0   top=404  right=200  bottom=672
+  //   SigLIP:         left=226 top=404  right=386  bottom=672
+  //   MotionEncoder:  left=412 top=404  right=612  bottom=672
+  //   MT tok out:     left=638 top=404  right=758  bottom=672
+  //   History block:  left=790 top=148  right=1216 bottom=672
+  //   Policy block:   left=790 top=692  right=1216 bottom=770
   const arrows = [
-    // input → CLIP (down on the left)
-    { d:`M 90 118 V 130 Q 90 138 100 138 H 110 Q 120 138 120 148`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
-    // input → frame pairs (down further left, bypassing kf branch)
-    { d:`M 90 118 V 392 Q 90 400 100 400 H 100 V 404`, stroke:'#4a3f35', m:'ah-ink', w:1.4, dash:'5 4', op:.55 },
+    // input(bottom) → CLIP(top)
+    { d:`M 120 118 V 148`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
+    // input(bottom) → Frame pairs(top): route through empty gap at x=559 (between TokenDrop and KF-tokens)
+    { d:`M 559 118 V 390 H 100 V 404`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
 
     // CLIP → TokenDrop
     { d:`M 240 262 H 266`, stroke:'#d85400', m:'ah-acc', w:1.6 },
@@ -814,12 +806,12 @@ function tokenCount(ev){
     // MotionEncoder → MT tokens
     { d:`M 612 538 H 638`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
-    // KF tokens → History (curve right & down a bit)
-    { d:`M 732 262 C 760 262, 760 360, 790 360`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    // KF tokens → History (curve right & down)
+    { d:`M 732 262 C 762 262, 762 320, 790 320`, stroke:'#d85400', m:'ah-acc', w:1.6 },
     // MT tokens → History
-    { d:`M 758 538 C 775 538, 775 460, 790 460`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 758 538 C 775 538, 775 480, 790 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
-    // History → Downstream
+    // History → Downstream policy
     { d:`M 1003 672 V 692`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
   ];
 
@@ -829,11 +821,6 @@ function tokenCount(ev){
       ${a.dash?`stroke-dasharray="${a.dash}"`:''} ${a.op?`opacity="${a.op}"`:''}
       marker-end="url(#${a.m})" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
-
-  // Background helper labels along arrows
-  body += `
-    <text x="118" y="395" font-family="JetBrains Mono" font-size="9" fill="#4a3f35" opacity=".7" transform="rotate(-90 118 395)">frame stream</text>
-  `;
 
   svg.innerHTML = body;
 })();
