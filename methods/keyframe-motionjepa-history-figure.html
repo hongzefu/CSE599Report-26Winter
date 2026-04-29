@@ -48,7 +48,7 @@ body::before{
 .canvas{
   position:relative;
   width:1216px;
-  height:560px;
+  height:640px;
   margin:0 auto;
 }
 @media (max-width: 1280px){
@@ -230,6 +230,16 @@ body::before{
   padding:6px 11px;letter-spacing:.06em;font-weight:700;flex:none;
 }
 
+/* ---------- Token sequence (history redesign) ---------- */
+.tok-sequence{display:flex;flex-direction:column;gap:5px;width:100%;flex:1;min-height:0}
+.tok-group{display:flex;align-items:center;gap:6px}
+.tg-label{width:68px;flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tg-name{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:12px;line-height:1}
+.tg-name.kf{color:var(--accent)}
+.tg-name.mt{color:var(--motion)}
+.tg-time{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);line-height:1}
+.tg-right{display:flex;align-items:center;gap:3px}
+
 /* ---------- caption ---------- */
 .caption{
   font-family:'Fraunces',serif;font-style:italic;font-size:13.5px;
@@ -254,10 +264,10 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
 </div>
 
 <div class="figure">
-  <div class="canvas" id="canvas">
+  <div class="canvas" id="canvas" style="height:640px">
 
     <!-- Arrow overlay -->
-    <svg class="arrows" id="arrows" viewBox="0 0 1216 560" preserveAspectRatio="none"></svg>
+    <svg class="arrows" id="arrows" viewBox="0 0 1216 640" preserveAspectRatio="none"></svg>
 
     <!-- ============ Input strip ============ -->
     <div class="block" style="left:0;top:0;width:1216px;height:104px">
@@ -345,15 +355,15 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ============ Combined History (right column, vertical) ============ -->
-    <div class="block" style="left:740px;top:128px;width:476px;height:322px">
+    <div class="block" style="left:740px;top:128px;width:476px;height:420px">
       <div class="history">
         <div class="history-name">Combined history token sequence</div>
-        <div class="history-rows" id="historyRows"></div>
+        <div class="tok-sequence" id="tokSequence"></div>
       </div>
     </div>
 
     <!-- ============ Downstream policy (below history, right column) ============ -->
-    <div class="block" style="left:740px;top:468px;width:476px;height:62px">
+    <div class="block" style="left:740px;top:556px;width:476px;height:62px">
       <div class="mod policy">
         <div class="policy">
           <span class="name">Downstream Policy</span>
@@ -581,32 +591,49 @@ const events = [
   {type:'kf', render:'partial', t:47},
 ];
 
-function historyTokSVG(ev){
-  if(ev.render === 'full') return patchGridSVG({mode:'full', ps:3, frame:false});
-  const data = tdPatchData[ev.t] || {sig:[],rect:null};
-  return patchGridSVG({mode:'partial', sigPatches:data.sig, fillRect:data.rect, ps:3, frame:false});
-}
 function tokenCount(ev){
   if(ev.type === 'mt') return 1;
   if(ev.render === 'full') return 256;
   return rectPatchCount(tdPatchData[ev.t]?.rect);
 }
 
-(function buildHistoryRows(){
-  const rows = document.getElementById('historyRows');
+function tokenGroupSVG(ev){
+  const S=6, G=1, C=S+G;
+  let cols, rows, fill;
+  if(ev.type==='mt'){ cols=1; rows=1; fill='#2f6fd6'; }
+  else if(ev.render==='full'){ cols=16; rows=16; fill='#d85400'; }
+  else{
+    const r=tdPatchData[ev.t]?.rect;
+    cols=r.c1-r.c0+1; rows=r.r1-r.r0+1; fill='#d85400';
+  }
+  const W=cols*C-G, H=rows*C-G;
+  let rs='';
+  for(let row=0;row<rows;row++) for(let c=0;c<cols;c++)
+    rs+=`<rect x="${c*C}" y="${row*C}" width="${S}" height="${S}" fill="${fill}" rx="0.5"/>`;
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${rs}</svg>`;
+}
+
+(function buildTokenGroups(){
+  const container = document.getElementById('tokSequence');
   events.forEach(ev => {
-    const cell = document.createElement('div');
-    cell.className = 'h-cell ' + ev.type;
-    const tokInner = ev.type === 'mt'
-      ? `<div class="mtb"></div>`
-      : historyTokSVG(ev);
-    const name = ev.type === 'mt' ? `MT@${ev.t}` : `KF@${ev.t}`;
-    cell.innerHTML = `
-      <div class="h-tok">${tokInner}</div>
-      <div class="h-name">${name}</div>
-      <div class="h-t">t=${ev.t}</div>
-    `;
-    rows.appendChild(cell);
+    const name = ev.type==='mt' ? `MT@${ev.t}` : `KF@${ev.t}`;
+    const S=6, G=1, C=S+G;
+    let rows;
+    if(ev.type==='mt') rows=1;
+    else if(ev.render==='full') rows=16;
+    else{ const r=tdPatchData[ev.t]?.rect; rows=r.r1-r.r0+1; }
+    const H=rows*C-G;
+    const BW=9, d=2;
+    const brace=`<svg width="${BW}" height="${H}" viewBox="0 0 ${BW} ${H}"><path d="M ${BW},0 C ${BW},${H/4} ${d},${H/4} ${d},${H/2} C ${d},${3*H/4} ${BW},${3*H/4} ${BW},${H}" fill="none" stroke="#4a3f35" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+    const group = document.createElement('div');
+    group.className = `tok-group ${ev.type}`;
+    group.innerHTML = `
+      <div class="tg-label">
+        <span class="tg-name ${ev.type}">${name}</span>
+        <span class="tg-time">t=${ev.t}</span>
+      </div>
+      <div class="tg-right">${brace}${tokenGroupSVG(ev)}</div>`;
+    container.appendChild(group);
   });
 })();
 
@@ -675,7 +702,7 @@ function tokenCount(ev){
     { d:`M 712 440 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy (vertical, inside right column)
-    { d:`M 978 450 V 468`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
+    { d:`M 978 548 V 556`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
   ];
 
   let body = defs;
