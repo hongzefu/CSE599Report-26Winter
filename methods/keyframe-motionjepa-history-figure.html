@@ -230,6 +230,29 @@ body::before{
   padding:6px 11px;letter-spacing:.06em;font-weight:700;flex:none;
 }
 
+/* ---------- SAM2Act-style module boxes ---------- */
+.sam-box{
+  width:100%;height:100%;border-radius:16px;position:relative;
+  display:flex;align-items:center;justify-content:center;
+  border:2px solid;
+  box-shadow:0 3px 12px -6px rgba(0,0,0,.18);
+}
+.siglip-box{background:#e8f4ea;border-color:var(--frozen-border)}
+.motion-box{background:var(--motion-soft);border-color:var(--motion)}
+.sam-box-name{
+  font-family:'Fraunces',serif;font-weight:700;font-size:17px;
+  text-align:center;line-height:1.35;
+}
+.siglip-box .sam-box-name{color:var(--frozen-ink)}
+.motion-box .sam-box-name{color:var(--motion)}
+.sam-badge-corner{
+  position:absolute;top:9px;right:9px;
+  background:var(--frozen-border);color:#fff;
+  font-family:'JetBrains Mono',monospace;font-size:8px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 7px;border-radius:4px;line-height:1.5;
+}
+
 /* ---------- Token sequence (history redesign) ---------- */
 .tok-sequence{display:flex;flex-direction:column;gap:5px;width:100%;flex:1;min-height:0}
 .tok-group{display:flex;align-items:center;gap:6px}
@@ -324,7 +347,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
 
     <!-- ============ MT branch (bottom-half) ============ -->
     <!-- Frame pair (single) -->
-    <div class="block" style="left:0;top:436px;width:200px;height:160px">
+    <div class="block" style="left:0;top:436px;width:180px;height:160px">
       <div class="mod motion">
         <span class="mod-name">Frame pair</span>
         <div class="pair-single">
@@ -337,26 +360,17 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- Frozen SigLIP -->
-    <div class="block" style="left:226px;top:436px;width:200px;height:160px">
-      <div class="mod frozen">
-        <span class="frozen-pill">frozen</span>
-        <span class="mod-name">SigLIP × 2</span>
-        <div class="siglip-stack">
-          <div class="siglip-tag">f<sub>t</sub> → (256, 1152)</div>
-          <div class="siglip-tag">f<sub>t+8</sub> → (256, 1152)</div>
-        </div>
+    <div class="block" style="left:230px;top:436px;width:150px;height:160px">
+      <div class="sam-box siglip-box">
+        <div class="sam-badge-corner">frozen</div>
+        <div class="sam-box-name">SigLIP × 2</div>
       </div>
     </div>
 
-    <!-- MotionEncoder (widened to absorb MT-out space) -->
-    <div class="block" style="left:452px;top:436px;width:260px;height:160px">
-      <div class="mod motion">
-        <span class="mod-name">Motion encoder</span>
-        <div class="me-formula">
-          motion = ME(<br>
-          &nbsp;&nbsp;tok<sub>t</sub>, tok<sub>t+8</sub><br>
-          ) <span class="dim">→ (B, M=1, D<sub>m</sub>)</span>
-        </div>
+    <!-- MotionEncoder -->
+    <div class="block" style="left:480px;top:436px;width:200px;height:160px">
+      <div class="sam-box motion-box">
+        <div class="sam-box-name">Motion<br>encoder</div>
       </div>
     </div>
 
@@ -703,13 +717,13 @@ function tokenGroupSVG(ev){
     { d:`M 260 308 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
 
     // MT branch horizontal
-    { d:`M 200 516 H 226`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    { d:`M 426 516 H 452`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 180 516 H 230`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 380 516 H 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // TokenDrop (KF stream) → History (right column, KF row mid-y)
     { d:`M 706 308 H 740`, stroke:'#d85400', m:'ah-acc', w:1.6 },
     // MotionEncoder (MT stream) → History (right column, MT row mid-y)
-    { d:`M 712 516 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 680 516 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy (vertical, inside right column)
     { d:`M 978 624 V 632`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
@@ -721,6 +735,18 @@ function tokenGroupSVG(ev){
       ${a.dash?`stroke-dasharray="${a.dash}"`:''} ${a.op?`opacity="${a.op}"`:''}
       marker-end="url(#${a.m})" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
+
+  // Size labels above MT-branch arrows
+  const szLabels = [
+    { x:430, y:507, text:'(256, 1152) × 2', fill:'#2f6fd6' },
+    { x:710, y:507, text:'(1, D_m)',         fill:'#2f6fd6' },
+  ];
+  szLabels.forEach(l => {
+    body += `<text x="${l.x}" y="${l.y}" text-anchor="middle"
+      font-family="JetBrains Mono, monospace" font-size="9" fill="${l.fill}"
+      font-weight="500">${l.text}</text>`;
+  });
+
   svg.innerHTML = body;
 })();
 </script>
