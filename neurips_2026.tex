@@ -60,6 +60,7 @@
 \usepackage{nicefrac}       % compact symbols for 1/2, etc.
 \usepackage{microtype}      % microtypography
 \usepackage{xcolor}         % colors
+\usepackage{graphicx}       % \includegraphics
 
 % Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
 \title{[Paper Title]}
@@ -455,13 +456,17 @@ parameters) to memory processing.
 
 \begin{figure}[t]
   \centering
-  \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-  \caption{TODO: method overview figure. Left: offline memory pipeline
-    (CLIP keyframe detection $\to$ TokenDrop $\to$ MotionEncoder motion
-    tokens) producing $\mathbf{M}_t$. Right: the three injection sites in
-    the $\pi_{0.5}$ backbone — Memory-as-Context into the VLM input,
-    Memory-as-Modulator into AdaLN of the action expert, and
-    Memory-as-Expert as a dedicated third expert.}
+  % Memory pipeline overview: from raw frame sequence to downstream policy action
+  \includegraphics[width=\linewidth]{image.png}
+  \caption{%
+    \textbf{Overall memory pipeline.}
+    A CLIP encoder selects semantic keyframes from the robot trajectory;
+    TokenDrop retains only the changed patches per keyframe.
+    A learned MotionEncoder compresses each short frame-pair window into
+    a single motion token via JEPA-style latent prediction.
+    The interleaved keyframe and motion tokens form a fixed-budget memory
+    sequence $\mathbf{M}_t$ that conditions the downstream policy to
+    predict action $a_t$.}
   \label{fig:overview}
 \end{figure}
 
