@@ -111,6 +111,34 @@ body::before{
   font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
   background:var(--accent);color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:.04em;
 }
+.kf-thumb-row{display:flex;gap:8px;width:100%;justify-content:center;margin-top:auto}
+.kf-thumb-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.kf-thumb-img{
+  width:48px;height:48px;border-radius:5px;overflow:hidden;
+  border:1.5px solid var(--accent);
+  box-shadow:0 0 0 1.5px rgba(216,84,0,.18);
+}
+.kf-thumb-img svg{display:block;width:100%;height:100%}
+.kf-thumb-label{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  font-weight:700;color:var(--accent);text-align:center;
+}
+
+/* ---------- TokenDrop output row ---------- */
+.td-out-row{
+  display:flex;gap:10px;width:100%;justify-content:center;
+  margin-top:4px;padding-top:6px;border-top:1px dashed var(--rule);
+}
+.td-out-item{display:flex;flex-direction:column;align-items:center;gap:3px}
+.td-out-grid{
+  width:38px;height:38px;border-radius:4px;overflow:hidden;
+  border:1.5px solid var(--accent);
+}
+.td-out-grid svg{display:block;width:100%;height:100%}
+.td-out-label{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  font-weight:700;color:var(--accent);text-align:center;
+}
 
 /* ---------- TokenDrop ---------- */
 .td-row{display:grid;grid-template-columns:1fr 12px 1fr 12px 1fr;align-items:center;gap:0;width:100%}
@@ -318,16 +346,12 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
       <div class="mod accent">
         <span class="mod-name">CLIP encoder</span>
         <div class="delta-inset"><svg id="curveSvg" viewBox="0 0 320 100" preserveAspectRatio="none"></svg></div>
-        <div class="kf-tags">
-          <span class="kf-tag">KF@0</span>
-          <span class="kf-tag">KF@35</span>
-          <span class="kf-tag">KF@47</span>
-        </div>
+        <div class="kf-thumb-row" id="kfThumbRow"></div>
       </div>
     </div>
 
     <!-- TokenDrop (widened to absorb KF-out space) -->
-    <div class="block" style="left:286px;top:204px;width:420px;height:208px">
+    <div class="block" style="left:286px;top:204px;width:420px;height:265px">
       <div class="mod accent">
         <span class="mod-name">TokenDrop</span>
         <div class="td-row">
@@ -342,12 +366,13 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
           <div>KF<sub>t</sub></div>
           <div>diff + bbox</div>
         </div>
+        <div class="td-out-row" id="tdOutRow"></div>
       </div>
     </div>
 
     <!-- ============ MT branch (bottom-half) ============ -->
     <!-- Frame pair (single) -->
-    <div class="block" style="left:0;top:436px;width:180px;height:160px">
+    <div class="block" style="left:0;top:489px;width:180px;height:160px">
       <div class="mod motion">
         <span class="mod-name">Frame pair</span>
         <div class="pair-single">
@@ -360,7 +385,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- Frozen SigLIP -->
-    <div class="block" style="left:230px;top:436px;width:150px;height:160px">
+    <div class="block" style="left:230px;top:489px;width:150px;height:160px">
       <div class="sam-box siglip-box">
         <div class="sam-badge-corner">frozen</div>
         <div class="sam-box-name">SigLIP × 2</div>
@@ -368,14 +393,14 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- MotionEncoder -->
-    <div class="block" style="left:480px;top:436px;width:200px;height:160px">
+    <div class="block" style="left:480px;top:489px;width:200px;height:160px">
       <div class="sam-box motion-box">
         <div class="sam-box-name">Motion<br>encoder</div>
       </div>
     </div>
 
     <!-- ============ Combined History (right column, vertical) ============ -->
-    <div class="block" style="left:740px;top:204px;width:476px;height:420px">
+    <div class="block" style="left:740px;top:204px;width:476px;height:445px">
       <div class="history">
         <div class="history-name">Combined history token sequence</div>
         <div class="tok-sequence" id="tokSequence"></div>
@@ -383,7 +408,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ============ Downstream policy (below history, right column) ============ -->
-    <div class="block" style="left:740px;top:632px;width:476px;height:62px">
+    <div class="block" style="left:740px;top:657px;width:476px;height:62px">
       <div class="mod policy">
         <div class="policy">
           <span class="name">Downstream Policy</span>
@@ -588,12 +613,44 @@ function patchGridSVG(opts){
 })();
 
 /* =================================================================
+   KF thumbnails in CLIP encoder block
+================================================================= */
+(function buildKfThumbs(){
+  const container = document.getElementById('kfThumbRow');
+  const labels = ['KF₀', 'KF₁', 'KF₂'];
+  keyframes.forEach((t, i) => {
+    const item = document.createElement('div');
+    item.className = 'kf-thumb-item';
+    item.innerHTML = `<div class="kf-thumb-img">${frameSVG(t)}</div>
+      <span class="kf-thumb-label">${labels[i]}</span>`;
+    container.appendChild(item);
+  });
+})();
+
+/* =================================================================
    TokenDrop demo
 ================================================================= */
 document.getElementById('tdRefThumb').innerHTML = frameSVG(0);
+
 document.getElementById('tdCurThumb').innerHTML = frameSVG(35);
 document.getElementById('tdDiffGrid').innerHTML =
   patchGridSVG({ sigPatches: demoSig, fillRect: demoRect, ps: 7 });
+
+(function buildTdOutputs(){
+  const container = document.getElementById('tdOutRow');
+  const items = [
+    { label: 'KF₀', svg: patchGridSVG({ mode: 'full' }) },
+    { label: 'KF₁', svg: patchGridSVG({ sigPatches: tdPatchData[35].sig, fillRect: tdPatchData[35].rect }) },
+    { label: 'KF₂', svg: patchGridSVG({ sigPatches: tdPatchData[47].sig, fillRect: tdPatchData[47].rect }) },
+  ];
+  items.forEach(({label, svg}) => {
+    const item = document.createElement('div');
+    item.className = 'td-out-item';
+    item.innerHTML = `<div class="td-out-grid">${svg}</div>
+      <span class="td-out-label">${label}</span>`;
+    container.appendChild(item);
+  });
+})();
 
 /* =================================================================
    Frame pair (single demo)
@@ -711,22 +768,22 @@ function tokenGroupSVG(ev){
     // Input → CLIP (drop down at CLIP horizontal center)
     { d:`M 130 180 V 204`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
     // Input → Frame pair (dashed) — route through CLIP/TokenDrop empty corridor x=273
-    { d:`M 273 180 V 424 H 100 V 436`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
+    { d:`M 273 180 V 477 H 100 V 489`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
 
     // KF branch horizontal
     { d:`M 260 308 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
 
     // MT branch horizontal
-    { d:`M 180 516 H 230`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    { d:`M 380 516 H 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 180 569 H 230`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 380 569 H 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // TokenDrop (KF stream) → History (right column, KF row mid-y)
     { d:`M 706 308 H 740`, stroke:'#d85400', m:'ah-acc', w:1.6 },
     // MotionEncoder (MT stream) → History (right column, MT row mid-y)
-    { d:`M 680 516 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 680 569 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy (vertical, inside right column)
-    { d:`M 978 624 V 632`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
+    { d:`M 978 649 V 657`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
   ];
 
   let body = defs;
@@ -738,8 +795,8 @@ function tokenGroupSVG(ev){
 
   // Size labels above MT-branch arrows
   const szLabels = [
-    { x:430, y:507, text:'(256, 1152) × 2', fill:'#2f6fd6' },
-    { x:710, y:507, text:'(1, D_m)',         fill:'#2f6fd6' },
+    { x:430, y:560, text:'(256, 1152) × 2', fill:'#2f6fd6' },
+    { x:710, y:560, text:'(1, D_m)',         fill:'#2f6fd6' },
   ];
   szLabels.forEach(l => {
     body += `<text x="${l.x}" y="${l.y}" text-anchor="middle"
