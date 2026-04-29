@@ -143,64 +143,71 @@
 History-dependent manipulation has motivated a rapidly growing family of
 memory designs for VLA policies, but the design space remains fragmented.
 The most direct treatment is to feed history in as additional context:
-ContextVLA~[22] concatenates a sliding window of past visual tokens to the
-transformer input, while BC-RNN~[29] rolls history through a recurrent
-state. Both extremes scale poorly --- the former pays linear attention
-cost in horizon length, the latter compresses without selection. Recent
-state-space policies, including RoboMamba~[28] and MITL~[47], replace the
-RNN with Mamba-style updates~[18], preserving constant-memory recurrence
-while extending the effective context window.
+ContextVLA~\citep{jang2025contextvla} concatenates a sliding window of past
+visual tokens to the transformer input, while
+BC-RNN~\citep{mandlekar2021bcrnn} rolls history through a recurrent state.
+Both extremes scale poorly --- the former pays linear attention cost in
+horizon length, the latter compresses without selection. Recent state-space
+policies, including RoboMamba~\citep{liu2024robomamba} and
+MITL~\citep{mitl2025}, replace the RNN with Mamba-style
+updates~\citep{gu2024mamba}, preserving constant-memory recurrence while
+extending the effective context window.
 
 A second line of work inserts an explicit \emph{memory bank} between the
-encoder and the policy and reads from it on demand. Hamlet~[24] and
-MemoryVLA~[33] cache past visual features together with auxiliary signals
-such as task instructions or cognitive summaries, and retrieve the
-relevant entries at each step; SAM2Act~[17] attaches a similar memory
-module to a video segmentation backbone so that object identity and
-action heatmaps remain stable across long horizons. MEM~[49] pushes this
-further by organizing embodied features at multiple temporal resolutions,
-while BPP~[50] recasts long-context imitation learning as the problem of
-selecting a small set of behaviorally relevant key history frames.
-HistRISE~[9] takes the structured-state view to its extreme, tracking
-object-centric 3D points as a non-differentiable symbolic memory.
+encoder and the policy and reads from it on demand.
+Hamlet~\citep{koo2025hamlet} and MemoryVLA~\citep{shi2026memoryvla} cache
+past visual features together with auxiliary signals such as task
+instructions or cognitive summaries, and retrieve the relevant entries at
+each step; SAM2Act~\citep{fang2025sam2act} attaches a similar memory module
+to a video segmentation backbone so that object identity and action heatmaps
+remain stable across long horizons. MEM~\citep{physicalintelligence2026mem}
+pushes this further by organizing embodied features at multiple temporal
+resolutions, while BPP~\citep{sobol2026bpp} recasts long-context imitation
+learning as the problem of selecting a small set of behaviorally relevant key
+history frames. HistRISE~\citep{chen2025histrise} takes the structured-state
+view to its extreme, tracking object-centric 3D points as a
+non-differentiable symbolic memory.
 
-A third, increasingly popular direction offloads memory entirely to a
-large vision-language model. UniVLA~[5] simply prepends past actions to
-the prompt, while MemER~[36], Gemini-Robotics-1.5~[38], and the steerable
-$\pi_{0.7}$ generalist~[48] rely on a VLM to produce language-based
-subgoals or natural-language plans that condition a downstream policy.
-This keeps the policy itself short-context, but introduces costly modular
-inference and breaks end-to-end optimization. Taken together, these works
-establish that memory is essential, yet they differ in backbone, in what
-is stored, and in how memory is integrated, making head-to-head
-comparison difficult --- the gap our controlled study targets, by
-training a family of memory-augmented VLAs on the same backbone and
-evaluating diverse representations and integration mechanisms in a
+A third, increasingly popular direction offloads memory entirely to a large
+vision-language model. UniVLA~\citep{bu2025univla} simply prepends past
+actions to the prompt, while MemER~\citep{sridhar2025memer},
+Gemini-Robotics-1.5~\citep{geminiroboticsTeam2025gemini15}, and the
+steerable $\pi_{0.7}$ generalist~\citep{physicalintelligence2026pi07} rely
+on a VLM to produce language-based subgoals or natural-language plans that
+condition a downstream policy. This keeps the policy itself short-context,
+but introduces costly modular inference and breaks end-to-end optimization.
+Taken together, these works establish that memory is essential, yet they
+differ in backbone, in what is stored, and in how memory is integrated,
+making head-to-head comparison difficult --- the gap our controlled study
+targets, by training a family of memory-augmented VLAs on the same backbone
+and evaluating diverse representations and integration mechanisms in a
 unified setting.
 
 \paragraph{Efficient Video Representation for Robotic Manipulation.}
 Episodic robot videos are heavily redundant: adjacent frames differ only
 in a few interaction-relevant pixels, and most patches encode static
 background or the robot's own body. General video understanding addresses
-this with token-level pruning and resampling --- TimeChat-Online~[44]
-shows that roughly 80\% of visual tokens are naturally redundant in
-streaming video, and VideoLLM-online~[10] streams video into a language
-model under an incremental token budget. In manipulation the constraint
-is tighter still: a policy must run at control rate while keeping many
-seconds of history within a fixed token window. Robotic methods therefore
-aggregate frames at the encoder side --- ContextVLA~[22] amortizes
-multi-frame context into a compact history bundle, Hamlet~[24] turns a
-vanilla VLA into a history-aware policy by switching its inputs at
-inference time, and long-context diffusion policies~[39] supervise
-past-token prediction so that the compressed history retains causally
-relevant information. A complementary thread asks \emph{which} frames
-matter: BPP~[50] explicitly selects key history frames for imitation
-learning, and SAM2Act~[17] reuses a video segmentation foundation model
-to anchor object identity across long horizons. We build on these
-observations by combining TokenDropped keyframe patches with a
-MotionEncoder summary, decoupling sparse visual evidence from
-high-frequency motion structure and giving every memory variant the same
-fixed-size video representation budget.
+this with token-level pruning and resampling ---
+TimeChat-Online~\citep{yao2025timechat} shows that roughly 80\% of visual
+tokens are naturally redundant in streaming video, and
+VideoLLM-online~\citep{chen2024videollmonline} streams video into a language
+model under an incremental token budget. In manipulation the constraint is
+tighter still: a policy must run at control rate while keeping many seconds
+of history within a fixed token window. Robotic methods therefore aggregate
+frames at the encoder side --- ContextVLA~\citep{jang2025contextvla}
+amortizes multi-frame context into a compact history bundle,
+Hamlet~\citep{koo2025hamlet} turns a vanilla VLA into a history-aware policy
+by switching its inputs at inference time, and long-context diffusion
+policies~\citep{torne2025longcontext} supervise past-token prediction so that
+the compressed history retains causally relevant information. A complementary
+thread asks \emph{which} frames matter:
+BPP~\citep{sobol2026bpp} explicitly selects key history frames for imitation
+learning, and SAM2Act~\citep{fang2025sam2act} reuses a video segmentation
+foundation model to anchor object identity across long horizons. We build on
+these observations by combining TokenDropped keyframe patches with a
+MotionEncoder summary, decoupling sparse visual evidence from high-frequency
+motion structure and giving every memory variant the same fixed-size video
+representation budget.
 
 
 \section{Method}
@@ -720,45 +727,8 @@ differences are attributable to memory \emph{content} rather than
 % (Hidden automatically in the anonymized submission by the \texttt{ack} environment.)
 \end{ack}
 
-\section*{References}
-
-
-References follow the acknowledgments in the camera-ready paper. Use unnumbered first-level heading for
-the references. Any choice of citation style is acceptable as long as you are
-consistent. It is permissible to reduce the font size to \verb+small+ (9 point)
-when listing the references.
-Note that the Reference section does not count towards the page limit.
-\medskip
-
-
-{
-\small
-
-
-[1] Alexander, J.A.\ \& Mozer, M.C.\ (1995) Template-based algorithms for
-connectionist rule extraction. In G.\ Tesauro, D.S.\ Touretzky and T.K.\ Leen
-(eds.), {\it Advances in Neural Information Processing Systems 7},
-pp.\ 609--616. Cambridge, MA: MIT Press.
-
-
-[2] Bower, J.M.\ \& Beeman, D.\ (1995) {\it The Book of GENESIS: Exploring
-  Realistic Neural Models with the GEneral NEural SImulation System.}  New York:
-TELOS/Springer--Verlag.
-
-
-[3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of learning and
-recall at excitatory recurrent synapses and cholinergic modulation in rat
-hippocampal region CA3. {\it Journal of Neuroscience} {\bf 15}(7):5249-5262.
-
-[48] Physical Intelligence.\ (2026) $\pi_{0.7}$: a Steerable Generalist
-Robotic Foundation Model with Emergent Capabilities.
-
-[49] Physical Intelligence.\ (2026) MEM: Multi-Scale Embodied Memory for
-Vision Language Action Models.
-
-[50] Sobol Mark, N.\ et al.\ (2026) BPP: Long-Context Robot Imitation Learning
-by Focusing on Key History Frames.
-}
+\bibliographystyle{abbrvnat}
+\bibliography{refs}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
