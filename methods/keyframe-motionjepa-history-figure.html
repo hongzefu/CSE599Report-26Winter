@@ -454,13 +454,11 @@ function rectPatchCount(rect){
    frameSVG (synthetic robot scene)
 ================================================================= */
 let _gid = 0;
-function frameSVG(t){
-  const uid = _gid++;
+function _frameSVGInner(t, uid){
   const kfBefore = keyframes.filter(k => k <= t);
   const stage = kfBefore.length - 1;
   const lastKf = kfBefore[kfBefore.length-1] ?? 0;
   const localT = (t - lastKf) % 16;
-
   const desk     = ['#c69a6b','#b88856','#d0a274','#a87d50','#be8f5d'][stage%5];
   const deskDark = ['#8a6236','#7a5428','#9a6b3c','#6e4820','#835932'][stage%5];
   const gx = 32 + localT * 3.2;
@@ -471,9 +469,7 @@ function frameSVG(t){
     [[46,60,'#b53b2e'],[62,54,'#e8e2d4']],
     [[52,58,'#b53b2e'],[66,56,'#e8e2d4']],
   ][stage%5];
-
-  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <defs><linearGradient id="g${uid}" x1="0" x2="0" y1="0" y2="1">
+  return `<defs><linearGradient id="g${uid}" x1="0" x2="0" y1="0" y2="1">
       <stop offset="0" stop-color="${desk}"/>
       <stop offset="1" stop-color="${deskDark}"/>
     </linearGradient></defs>
@@ -489,7 +485,23 @@ function frameSVG(t){
     <rect x="${gx-2}" y="0" width="4" height="18" fill="#ddd"/>
     <rect x="${gx-7}" y="16" width="14" height="6" fill="#aaa" rx="1"/>
     <rect x="${gx-7}" y="22" width="3" height="8" fill="#999"/>
-    <rect x="${gx+4}" y="22" width="3" height="8" fill="#999"/>
+    <rect x="${gx+4}" y="22" width="3" height="8" fill="#999"/>`;
+}
+function frameSVG(t){
+  const uid = _gid++;
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${_frameSVGInner(t,uid)}</svg>`;
+}
+function maskedFrameSVG(t, bbox){
+  const uid = _gid++;
+  const ps = 100 / 16;
+  const bx = bbox.c0 * ps, by = bbox.r0 * ps;
+  const bw = (bbox.c1 - bbox.c0 + 1) * ps, bh = (bbox.r1 - bbox.r0 + 1) * ps;
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    ${_frameSVGInner(t,uid)}
+    <path fill-rule="evenodd" fill="rgba(0,0,0,0.55)"
+      d="M0,0 H100 V100 H0 Z M${bx},${by} H${bx+bw} V${by+bh} H${bx} Z"/>
+    <rect x="${bx}" y="${by}" width="${bw}" height="${bh}"
+      fill="none" stroke="#d85400" stroke-width="2" rx="1"/>
   </svg>`;
 }
 
@@ -619,9 +631,9 @@ function patchGridSVG(opts){
 (function buildTokenDropGrids(){
   const container = document.getElementById('tdGridRow');
   const items = [
-    { label: 'KF₀', svg: patchGridSVG({ mode: 'full' }) },
-    { label: 'KF₁', svg: patchGridSVG({ sigPatches: tdPatchData[35].sig, fillRect: tdPatchData[35].rect }) },
-    { label: 'KF₂', svg: patchGridSVG({ sigPatches: tdPatchData[47].sig, fillRect: tdPatchData[47].rect }) },
+    { label: 'KF₀', svg: frameSVG(0) },
+    { label: 'KF₁', svg: maskedFrameSVG(35, tdPatchData[35].rect) },
+    { label: 'KF₂', svg: maskedFrameSVG(47, tdPatchData[47].rect) },
   ];
   items.forEach(({label, svg}) => {
     const item = document.createElement('div');
