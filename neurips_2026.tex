@@ -113,26 +113,126 @@
 
 
 \begin{abstract}
-% TODO: 1 paragraph, ~150-250 words.
-% Order: problem -> gap in prior work -> our approach (1-2 sentences)
-%        -> key results / contributions (1-2 sentences).
+Long-horizon robotic manipulation is non-Markovian: counting events,
+recovering object identity under occlusion, and reproducing demonstrated
+motions all require retaining many seconds of visual history while the
+policy runs at control rate within a fixed token budget. Recent benchmark
+evidence~\citep{dai2026robomme} shows that perceptual memory representations
+dominate motion-centric and time-sensitive tasks, but its concrete
+instantiations --- uniform frame sampling and temporal-saliency-agnostic
+token dropping --- are content-blind and degrade sharply as the memory
+budget tightens, while symbolic / language-subgoal memory cannot adequately
+represent low-level continuous motion. We introduce a robot-specialized
+perceptual memory that decouples \emph{what} the robot saw from \emph{how}
+things moved between observations: a CLIP-derivative keyframe selector with
+delta-based per-keyframe TokenDrop carries sparse spatial evidence at
+semantic transitions, and a learned MotionEncoder, pretrained on unlabeled
+robot video by JEPA-style~\citep{assran2023ijepa} latent future-token
+prediction, summarizes each short window into a single compact motion
+token. The combined sequence is exposed to the $\pi_{0.5}$ backbone
+through a fixed-budget memory interface compatible with all three
+Memory-as-Context, -Modulator, and -Expert integration mechanisms used in
+the MME-VLA suite~\citep{dai2026robomme}, enabling apples-to-apples
+comparison against uniform-frame-sampling and token-dropping baselines at
+matched memory budgets. Full quantitative evaluation on RoboMME is
+\emph{in progress} (Sec.~\ref{sec:exp}).
 \end{abstract}
 
 
 \section{Introduction}
 \label{sec:intro}
-% TODO: 5-6 paragraphs.
-% 1) Big picture: why the problem matters.
-% 2) Limitations of existing work (motivate the gap).
-% 3) Our core idea (1-2 intuitive sentences).
-% 4) High-level overview of the approach.
-% 5) Headline results / takeaway.
+
+Open-world robotic manipulation is rarely Markovian. A household robot that
+returns books to the right shelves must remember where each book originally
+came from; a robot asked to ``press the button \emph{exactly} when the
+moving cube reaches the target a specified number of times'' must
+remember an event count and an event ordering; a robot reproducing a
+demonstrated trajectory must replay motion patterns it observed seconds
+earlier~\citep{dai2026robomme}. Modern vision-language-action (VLA) policies
+run at control rate, on a transformer with a fixed input window, so the
+central design question for memory-augmented manipulation is not
+\emph{whether} to retain history but \emph{which projection of it} fits
+inside that window without losing decision-relevant signal.
+
+Two ends of the design spectrum have been explored, and each is
+unsatisfactory. \emph{Symbolic} memory~\citep{bu2025univla,sridhar2025memer,geminiroboticsTeam2025gemini15}
+discretizes history into language-based subgoals or natural-language plans;
+this is cheap and human-interpretable, but recent controlled
+evaluation~\citep{dai2026robomme} shows that language under-specifies
+continuous motion and the resulting policies struggle on motion-centric
+and precise visuomotor tasks even when given oracle subgoals. \emph{Perceptual}
+memory keeps raw visual tokens~\citep{jang2025contextvla,koo2025hamlet,fang2025sam2act,shi2026memoryvla,physicalintelligence2026mem},
+and is the empirically stronger family on motion-centric and long-horizon
+tasks~\citep{dai2026robomme}; but the two perceptual instantiations
+evaluated head-to-head in that study --- uniform frame sampling and
+temporal-saliency-agnostic token dropping --- are content-blind. A uniform
+sampler treats a critical contact event identically to a static-table
+frame, and patch-level dropping that ignores temporal saliency removes the
+global layout that timing- and counting-style tasks need. Both perceptual
+variants degrade steeply as the memory budget shrinks, leaving open the
+question of whether the perceptual family is structurally limited or only
+its existing representatives are.
+
+Robot videos have two complementary kinds of structure: a small number of
+moments that genuinely matter (object pickup, contact, release, viewpoint
+shift), and the relatively predictable motion that fills the gaps between
+them. We argue the right perceptual memory should mirror that structure:
+keep semantically chosen keyframes for \emph{what was seen and when}, and
+learn a compact summary for \emph{how things moved between frames}. Our
+motion summary is trained, JEPA-style~\citep{assran2023ijepa}, to predict
+the latent SigLIP tokens of a future frame from those of the current frame
+and a learnable motion code, so a single motion token is forced to encode
+exactly the bridge information that any uniform-subsampling scheme throws
+away.
+
+We instantiate this idea in three pieces. First, a deterministic
+CLIP-derivative keyframe detector selects frames at semantic transitions;
+a delta-based per-keyframe TokenDrop then keeps only patches that changed
+relative to the previous keyframe, plus their bounding rectangle for
+spatial contiguity. Second, a small causal-transformer MotionEncoder
+$f_\theta$ runs over fixed-stride short windows and emits one motion token
+per window; it is pretrained on unlabeled robot video together with an
+auxiliary MotionDiT decoder that regresses future SigLIP tokens, and the
+decoder is discarded at deployment. Third, the resulting time-tagged
+sequence is exposed as a fixed-budget memory state $\mathbf M_t$ through
+the same Memory-as-Context, Memory-as-Modulator, and Memory-as-Expert
+interfaces used by the MME-VLA suite of \citet{dai2026robomme} on the
+$\pi_{0.5}$ backbone. The memory pipeline is task-agnostic and trained
+once; only the VLA fine-tunes per task. Replacing the perceptual memory
+module with our keyframe-plus-motion design is therefore a drop-in change
+at every comparison point, so any observed effect is attributable to
+memory \emph{content}, not \emph{injection}.
+
+We evaluate this design on RoboMME~\citep{dai2026robomme} --- a long-horizon,
+history-dependent benchmark spanning temporal, spatial, object, and
+procedural memory tasks --- against uniform-frame-sampling and naive
+token-drop perceptual baselines at matched memory budgets, under all
+three integration mechanisms. Our hypothesis is that content-aware
+keyframes plus a learned motion summary preserve more decision-relevant
+signal per token than information-blind subsampling, particularly on
+motion-centric and long-horizon tasks where symbolic memory cannot
+represent continuous motion. Whether this hypothesis holds across budgets
+and integration choices is the subject of Sec.~\ref{sec:exp}, where the
+full quantitative evaluation is currently \emph{in progress}.
 
 \paragraph{Contributions.}
 \begin{itemize}
-    \item TODO: contribution 1.
-    \item TODO: contribution 2.
-    \item TODO: contribution 3.
+    \item A robot-specialized perceptual memory that combines CLIP-scored
+          semantic keyframes with delta-based TokenDrop and a learned
+          MotionEncoder, decoupling sparse spatial evidence from compact
+          short-range motion summaries inside a fixed token budget.
+    \item A JEPA-style~\citep{assran2023ijepa} latent future-token-prediction
+          objective with an auxiliary MotionDiT decoder that is discarded at
+          deployment, used to pretrain the MotionEncoder on unlabeled robot
+          video so each motion token is forced to encode exactly the
+          information needed to bridge consecutive observations.
+    \item A controlled evaluation protocol on
+          RoboMME~\citep{dai2026robomme}: our memory plugs into the existing
+          MME-VLA Memory-as-Context, -Modulator, and -Expert interfaces on
+          the $\pi_{0.5}$ backbone, enabling apples-to-apples comparison
+          against uniform-frame-sampling and naive token-drop baselines at
+          matched memory budgets (full quantitative results: \emph{evaluation
+          in progress}).
 \end{itemize}
 
 
@@ -214,8 +314,8 @@ representation budget.
 \label{sec:method}
 % TODO: one short paragraph summarizing what the method does and giving a roadmap of this section.
 
-\subsection{Preliminaries and Problem Setup}
-\label{sec:prelim}
+% \subsection{Preliminaries and Problem Setup}
+% \label{sec:prelim}
 % TODO: formal problem definition + notation.
 
 \subsection{Model Architecture}
@@ -733,12 +833,12 @@ differences are attributable to memory \emph{content} rather than
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\appendix
+% \appendix
 
-\section{Technical appendices and supplementary material}
-Technical appendices with additional results, figures, graphs, and proofs may be submitted with the paper submission before the full submission deadline (see above). You can upload a ZIP file for videos or code, but do not upload a separate PDF file for the appendix. There is no page limit for the technical appendices. 
+% \section{Technical appendices and supplementary material}
+% Technical appendices with additional results, figures, graphs, and proofs may be submitted with the paper submission before the full submission deadline (see above). You can upload a ZIP file for videos or code, but do not upload a separate PDF file for the appendix. There is no page limit for the technical appendices. 
 
-Note: Think of the appendix as ``optional reading'' for reviewers. The paper must be able to stand alone without the appendix; for example, adding critical experiments that support the main claims to an appendix is inappropriate. 
+% Note: Think of the appendix as ``optional reading'' for reviewers. The paper must be able to stand alone without the appendix; for example, adding critical experiments that support the main claims to an appendix is inappropriate. 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
