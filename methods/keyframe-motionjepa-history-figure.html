@@ -9,13 +9,12 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#faf7f2; --bg2:#f0ebe1; --ink:#1a1410; --ink-soft:#4a3f35;
+  --bg:#faf7f2; --ink:#1a1410; --ink-soft:#4a3f35;
   --rule:#d9cfbe;
   --accent:#d85400; --accent-soft:#ffe8d4;
   --motion:#2f6fd6; --motion-soft:#dce8fb;
   --frozen-bg:#e7eee5; --frozen-border:#9db89a; --frozen-ink:#3a5a40;
-  --kept:#2f9d62;   --kept-soft:#dff1e5;
-  --td:#c47a00;     --td-soft:#fff1cc;
+  --kept:#2f9d62;
   --policy-bg:#f4eef9; --policy-border:#a48bc4; --policy-ink:#5b3f80;
   --paper:radial-gradient(ellipse at top,#fffdf8 0%,var(--bg) 55%);
 }
@@ -39,76 +38,53 @@ body::before{
 .legend span{display:inline-flex;align-items:center;gap:7px}
 .swatch{width:12px;height:12px;border-radius:3px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
 
-/* outer figure card */
 .figure{
   background:#fffdf8;border:1px solid var(--rule);border-radius:14px;
-  padding:30px 36px 28px;
+  padding:28px 32px 22px;
   box-shadow:0 1px 0 rgba(26,20,16,.02),0 8px 30px -18px rgba(26,20,16,.18);
 }
 
-/* fixed-aspect canvas for absolute positioning + arrow alignment */
+/* fixed canvas for absolute layout + arrow alignment */
 .canvas{
   position:relative;
   width:1216px;
-  height:780px;
+  height:660px;
   margin:0 auto;
 }
-
 @media (max-width: 1280px){
   body{padding:24px 16px 40px}
   .figure{padding:22px 18px 22px}
   .canvas{transform-origin:top left;transform:scale(.94)}
 }
 
-.arrows{
-  position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;
-}
-
+.arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
 .block{position:absolute;z-index:2}
 
-/* shared block visual */
+/* ---------- module box ---------- */
 .mod{
-  background:#fff;border:1.5px solid var(--rule);border-radius:10px;
-  padding:10px 14px 12px;
-  box-shadow:0 2px 6px -3px rgba(26,20,16,.12);
-  display:flex;flex-direction:column;align-items:center;gap:6px;
+  background:#fff;border:1.5px solid var(--rule);border-radius:9px;
+  padding:9px 12px 11px;
+  box-shadow:0 2px 6px -3px rgba(26,20,16,.1);
+  display:flex;flex-direction:column;align-items:center;gap:5px;
   height:100%;
 }
 .mod.accent{border-color:var(--accent);background:linear-gradient(180deg,#fff,#fff7ee)}
 .mod.motion{border-color:var(--motion);background:linear-gradient(180deg,#fff,#f4f8ff)}
-.mod.frozen{border-color:var(--frozen-border);background:var(--frozen-bg);color:var(--frozen-ink)}
-.mod.policy{border-color:var(--policy-border);background:var(--policy-bg);color:var(--policy-ink)}
-
-.mod-title{
-  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);
-  align-self:flex-start;margin-bottom:2px;line-height:1.2;
-}
-.mod.accent .mod-title{color:var(--accent)}
-.mod.motion .mod-title{color:var(--motion)}
-.mod.frozen .mod-title{color:var(--frozen-ink)}
-.mod.policy .mod-title{color:var(--policy-ink)}
+.mod.frozen{border-color:var(--frozen-border);background:var(--frozen-bg)}
+.mod.policy{border-color:var(--policy-border);background:var(--policy-bg)}
+.mod.dashed{border-style:dashed;background:#fff}
 
 .mod-name{
-  font-family:'Fraunces',serif;font-weight:600;font-size:16px;
+  font-family:'Fraunces',serif;font-weight:600;font-size:15px;
   letter-spacing:-.005em;color:var(--ink);line-height:1.15;
-  align-self:flex-start;
+  align-self:flex-start;margin-bottom:1px;
 }
+.mod.accent .mod-name{color:var(--accent)}
+.mod.motion .mod-name{color:var(--motion)}
 .mod.frozen .mod-name{color:var(--frozen-ink)}
 .mod.policy .mod-name{color:var(--policy-ink)}
 
-.mod-sub{
-  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);
-  letter-spacing:.04em;line-height:1.5;align-self:flex-start;
-}
-.mod-frozen-tag{
-  font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;
-  letter-spacing:.16em;text-transform:uppercase;color:var(--frozen-ink);
-  background:#fff;border:1px solid var(--frozen-border);border-radius:3px;
-  padding:1px 6px;align-self:flex-start;margin-bottom:2px;
-}
-
-/* === Input strip === */
+/* ---------- input strip ---------- */
 .input-strip .frames-row{display:grid;grid-template-columns:repeat(48,1fr);gap:2px;width:100%}
 .input-strip .frame{aspect-ratio:1/1;border-radius:3px;overflow:hidden;border:1.5px solid transparent;background:#e8dfcc;position:relative}
 .input-strip .frame svg{display:block;width:100%;height:100%}
@@ -117,26 +93,26 @@ body::before{
 .input-strip .frame.inter{opacity:.45}
 .input-strip .axis-row{display:grid;grid-template-columns:repeat(48,1fr);gap:2px;
   font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink-soft);
-  text-align:center;margin-top:4px;line-height:1}
+  text-align:center;margin-top:3px;line-height:1}
 .input-strip .axis-row span.kf{color:var(--accent);font-weight:700}
 .input-strip .axis-row span.mt{color:var(--motion);font-weight:600}
+.input-title{display:flex;align-items:baseline;gap:10px;width:100%;margin-bottom:4px}
+.input-title .name{font-family:'Fraunces',serif;font-weight:600;font-size:13px;color:var(--ink)}
+.input-title .meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-soft);margin-left:auto;letter-spacing:.04em}
 
-/* === CLIP block + delta inset === */
+/* ---------- CLIP ---------- */
 .delta-inset{
-  width:100%;height:78px;background:#fbf6ea;border:1px solid var(--rule);
+  width:100%;height:84px;background:#fbf6ea;border:1px solid var(--rule);
   border-radius:6px;overflow:hidden;
 }
 .delta-inset svg{display:block;width:100%;height:100%}
-
-/* === KF detection === */
-.kf-tags{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-start;width:100%}
+.kf-tags{display:flex;flex-wrap:wrap;gap:5px;width:100%;margin-top:auto}
 .kf-tag{
   font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
-  background:var(--accent);color:#fff;border-radius:4px;padding:2px 7px;
-  letter-spacing:.04em;
+  background:var(--accent);color:#fff;border-radius:4px;padding:2px 7px;letter-spacing:.04em;
 }
 
-/* === TokenDrop block === */
+/* ---------- TokenDrop ---------- */
 .td-row{display:grid;grid-template-columns:1fr 12px 1fr 12px 1fr;align-items:center;gap:0;width:100%}
 .td-thumb{aspect-ratio:1/1;width:100%;border-radius:5px;overflow:hidden;border:1.5px solid var(--rule)}
 .td-thumb.ref{border-color:var(--accent)}
@@ -146,109 +122,112 @@ body::before{
 .td-grid svg{display:block;width:100%;height:100%}
 .td-caption{
   font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);
-  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;width:100%;text-align:center;line-height:1.4;
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;width:100%;text-align:center;line-height:1.35;margin-top:4px;
 }
 
-/* === Frame pairs === */
-.pair-list{display:grid;grid-template-columns:1fr;gap:5px;width:100%}
-.pair-row{display:grid;grid-template-columns:18px 1fr 12px 1fr;align-items:center;gap:5px}
-.pair-row .pidx{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--motion);font-weight:600;line-height:1;text-align:right}
-.pair-row .pframe{aspect-ratio:1/1;width:100%;border-radius:3px;overflow:hidden;border:1px solid var(--rule)}
-.pair-row .pframe.anchor{border-color:var(--motion)}
-.pair-row .pframe svg{display:block;width:100%;height:100%}
-.pair-row .pa{font-size:11px;color:var(--motion);text-align:center;line-height:1;opacity:.7}
-
-/* === Token output strips (KF tokens / MT tokens) === */
+/* ---------- token output boxes ---------- */
 .tok-out{
-  background:#fff;border:1.5px dashed var(--rule);border-radius:8px;
+  border:1.5px dashed var(--rule);border-radius:8px;background:#fff;
   padding:8px 10px;display:flex;flex-direction:column;gap:6px;width:100%;height:100%;
   align-items:center;justify-content:center;
 }
+.tok-out.kf{border-color:rgba(216,84,0,.55)}
+.tok-out.mt{border-color:rgba(47,111,214,.55);background:#f9fbff}
 .tok-out .tlabel{
   font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);
-  letter-spacing:.08em;text-transform:uppercase;
+  letter-spacing:.1em;text-transform:uppercase;
 }
+.tok-out.kf .tlabel{color:var(--accent)}
+.tok-out.mt .tlabel{color:var(--motion)}
+
 .kf-tok-mini{display:flex;gap:8px;align-items:flex-start;justify-content:center}
 .kf-tok-mini .item{display:flex;flex-direction:column;align-items:center;gap:3px}
 .kf-tok-mini .grid-mini{width:42px;height:42px}
 .kf-tok-mini .grid-mini svg{display:block;width:100%;height:100%}
-.kf-tok-mini .clab{font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--accent);font-weight:700}
-.mt-tok-mini{display:flex;gap:5px;align-items:center;justify-content:center;flex-wrap:wrap}
-.mt-tok-mini .mtok{width:9px;height:22px;border-radius:2px;background:var(--motion)}
+.kf-tok-mini .clab{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--accent);font-weight:700}
 
-/* === History sequence (vertical, fixed-height rows) === */
+.mt-tok-mini{display:flex;gap:5px;align-items:center;justify-content:center}
+.mt-tok-mini .mtok{width:10px;height:26px;border-radius:2px;background:var(--motion)}
+
+/* ---------- frame pair (single) ---------- */
+.pair-single{display:flex;align-items:center;gap:8px;width:100%;justify-content:center}
+.pair-single .pframe{width:60px;height:60px;border-radius:5px;overflow:hidden;border:1.5px solid var(--rule)}
+.pair-single .pframe.anchor{border-color:var(--motion)}
+.pair-single .pframe svg{display:block;width:100%;height:100%}
+.pair-single .pa{font-size:18px;color:var(--motion);line-height:1;opacity:.7}
+.pair-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--motion);
+  letter-spacing:.04em;font-weight:600;margin-top:auto}
+
+/* ---------- SigLIP ---------- */
+.siglip-stack{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center}
+.siglip-tag{
+  border:1px solid var(--frozen-border);background:#fff;border-radius:5px;
+  padding:7px 10px;text-align:center;width:100%;
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;
+  color:var(--frozen-ink);letter-spacing:.05em;
+}
+.frozen-pill{
+  font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:700;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--frozen-ink);
+  background:#fff;border:1px solid var(--frozen-border);border-radius:3px;
+  padding:1px 6px;align-self:flex-start;margin-bottom:1px;
+}
+
+/* ---------- MotionEncoder ---------- */
+.me-formula{
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--motion);
+  background:var(--motion-soft);border-radius:6px;padding:9px 12px;line-height:1.5;
+  width:100%;text-align:left;
+}
+.me-formula .dim{color:var(--ink-soft);font-size:10px}
+
+/* ---------- History strip (horizontal, MemoryVLA-style) ---------- */
 .history{
-  background:linear-gradient(180deg,#fff7e6 0%,#fff 50%,#e8f0fb 100%);
-  border:1.5px solid var(--rule);border-radius:12px;
-  padding:14px 16px 14px;height:100%;display:flex;flex-direction:column;
-  overflow:hidden;
+  background:linear-gradient(90deg,#fff7e6 0%,#fff 50%,#e8f0fb 100%);
+  border:1.5px solid var(--rule);border-radius:11px;
+  padding:12px 18px 14px;height:100%;
 }
-.history-head{
-  font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--ink-soft);margin-bottom:10px;
-  display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;
+.history-name{
+  font-family:'Fraunces',serif;font-size:14px;font-weight:600;color:var(--ink);
+  margin-bottom:8px;
 }
-.history-head strong{color:var(--accent);font-weight:700;letter-spacing:.05em;text-transform:none;font-size:11px}
+.history-row{
+  display:grid;grid-template-columns:repeat(8,1fr);gap:14px;width:100%;
+}
+.h-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.h-cell .h-tok{
+  width:48px;height:48px;border-radius:7px;border:1.5px solid var(--rule);
+  background:#fff;display:flex;align-items:center;justify-content:center;
+  padding:4px;
+}
+.h-cell.kf .h-tok{border-color:var(--accent);background:#fffaf3;box-shadow:0 1px 4px -2px rgba(216,84,0,.25)}
+.h-cell.mt .h-tok{border-color:var(--motion);background:#f4f8ff}
+.h-cell .h-tok svg{display:block;width:100%;height:100%}
+.h-cell .h-tok .mtb{width:14px;height:32px;border-radius:2px;background:var(--motion)}
+.h-cell .h-name{
+  font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:11.5px;
+  letter-spacing:0;line-height:1;
+}
+.h-cell.kf .h-name{color:var(--accent)}
+.h-cell.mt .h-name{color:var(--motion)}
+.h-cell .h-t{
+  font-family:'JetBrains Mono',monospace;font-size:8.5px;color:var(--ink-soft);
+  letter-spacing:.04em;line-height:1;
+}
 
-.history-body{
-  display:grid;grid-template-columns:46px 1fr;
-  row-gap:6px;column-gap:10px;align-content:start;
-  flex:1;min-height:0;
-}
-.h-tlabel{
-  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);
-  text-align:right;align-self:center;line-height:1;font-weight:600;letter-spacing:.04em;
-  padding:2px 6px;border-radius:4px;background:rgba(255,255,255,.55);
-  border:1px solid var(--rule);
-}
-.h-tlabel.kf{color:var(--accent);border-color:rgba(216,84,0,.35);background:#fff5e9}
-.h-tlabel.mt{color:var(--motion);border-color:rgba(47,111,214,.35);background:#eef3fc}
-
-.h-event{
-  display:flex;align-items:center;gap:10px;
-  background:#fff;border:1.5px solid var(--rule);border-radius:7px;
-  padding:5px 9px;min-height:38px;
-}
-.h-event.kf{border-color:var(--accent);background:#fffaf3;box-shadow:0 1px 4px -2px rgba(216,84,0,.25)}
-.h-event.mt{border-color:var(--motion);background:#f4f8ff}
-.h-event .h-tok{
-  display:flex;align-items:center;justify-content:center;flex:none;
-  width:34px;height:34px;
-}
-.h-event .h-tok svg{display:block;width:100%;height:100%}
-.h-event.mt .mtb{width:14px;height:26px;border-radius:2px;background:var(--motion)}
-.h-event .h-cap{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);line-height:1.35;flex:1;min-width:0}
-.h-event.kf .h-cap{color:var(--accent)}
-.h-event.mt .h-cap{color:var(--motion)}
-.h-event .h-cap b{display:inline-block;font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:12.5px;letter-spacing:0;margin-right:6px}
-.h-event.kf .h-cap b{color:var(--accent)}
-.h-event.mt .h-cap b{color:var(--motion)}
-
-.h-counter{
-  margin-top:10px;padding-top:10px;border-top:1px dashed var(--rule);
-  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;
-  font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--ink-soft);
-}
-.h-counter .cell{display:flex;flex-direction:column;line-height:1.25}
-.h-counter b{font-family:'Fraunces',serif;font-size:18px;font-style:italic;color:var(--ink);font-weight:600}
-.h-counter b.a{color:var(--accent)} .h-counter b.m{color:var(--motion)}
-.h-counter b.s{color:var(--kept)}    .h-counter b.r{color:var(--td)}
-
-/* === Downstream policy === */
+/* ---------- Downstream policy ---------- */
 .policy{
-  display:flex;align-items:center;gap:14px;padding:10px 14px;height:100%;
+  display:flex;align-items:center;gap:14px;height:100%;padding:10px 16px;
 }
-.policy .arrow-out{font-size:20px;color:var(--policy-ink);opacity:.7;line-height:1}
-.policy-text{display:flex;flex-direction:column;gap:2px;flex:1}
 .policy .name{font-family:'Fraunces',serif;font-weight:600;font-size:15px;color:var(--policy-ink)}
-.policy .sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--policy-ink);opacity:.85;letter-spacing:.06em}
+.policy .arrow-out{font-size:18px;color:var(--policy-ink);opacity:.7;line-height:1}
 .action-out{
-  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--policy-ink);
-  border:1.5px solid var(--policy-border);background:#fff;border-radius:6px;padding:6px 10px;
-  letter-spacing:.06em;font-weight:700;flex:none;
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--policy-ink);
+  border:1.5px solid var(--policy-border);background:#fff;border-radius:6px;
+  padding:6px 11px;letter-spacing:.06em;font-weight:700;flex:none;
 }
 
-/* === Caption === */
+/* ---------- caption ---------- */
 .caption{
   font-family:'Fraunces',serif;font-style:italic;font-size:13.5px;
   color:var(--ink-soft);line-height:1.55;margin-top:18px;padding-top:14px;
@@ -256,7 +235,7 @@ body::before{
 }
 .caption b{color:var(--ink);font-weight:600;font-style:normal;font-family:'Inter',sans-serif;font-size:12.5px;letter-spacing:.02em}
 
-footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
+footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
   letter-spacing:.06em;color:var(--ink-soft);text-align:right}
 </style>
 </head>
@@ -266,7 +245,7 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
 <div class="legend">
   <span><i class="swatch" style="background:var(--accent)"></i>Keyframe</span>
   <span><i class="swatch" style="background:var(--kept)"></i>Full ViT token (KF₀)</span>
-  <span><i class="swatch" style="background:var(--motion)"></i>Motion token (MotionJEPA)</span>
+  <span><i class="swatch" style="background:var(--motion)"></i>Motion token</span>
   <span><i class="swatch" style="background:var(--frozen-bg);border-color:var(--frozen-border)"></i>Frozen module</span>
   <span><i class="swatch" style="background:var(--policy-bg);border-color:var(--policy-border)"></i>Downstream policy</span>
 </div>
@@ -275,17 +254,14 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
   <div class="canvas" id="canvas">
 
     <!-- Arrow overlay -->
-    <svg class="arrows" id="arrows" viewBox="0 0 1216 780" preserveAspectRatio="none"></svg>
+    <svg class="arrows" id="arrows" viewBox="0 0 1216 660" preserveAspectRatio="none"></svg>
 
-    <!-- ============ Input strip (top, full width) ============ -->
-    <div class="block" style="left:0;top:0;width:1216px;height:118px">
-      <div class="mod" style="padding:10px 14px 10px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline;width:100%">
-          <div style="display:flex;align-items:baseline;gap:10px">
-            <span class="mod-title" style="margin:0">Input</span>
-            <span class="mod-name" style="font-size:14px">Robot trajectory · 48 RGB frames</span>
-          </div>
-          <span class="mod-sub" style="margin:0">Keyframes (orange) chosen by CLIP Δ-distance · MT window edges (blue) every Δ=8</span>
+    <!-- ============ Input strip ============ -->
+    <div class="block" style="left:0;top:0;width:1216px;height:104px">
+      <div class="mod" style="padding:8px 12px 9px">
+        <div class="input-title">
+          <span class="name">Robot trajectory · 48 RGB frames</span>
+          <span class="meta">orange = keyframe (CLIP Δ peak) · blue edge = MT window (Δ=8)</span>
         </div>
         <div class="input-strip" style="width:100%">
           <div class="frames-row" id="rawFrames"></div>
@@ -294,16 +270,13 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
       </div>
     </div>
 
-    <!-- ============ KF branch (top-half, left part) ============ -->
-    <!-- 1) CLIP encoder + Δ inset -->
-    <div class="block" style="left:0;top:148px;width:240px;height:228px">
+    <!-- ============ KF branch (top-half) ============ -->
+    <!-- CLIP -->
+    <div class="block" style="left:0;top:128px;width:228px;height:208px">
       <div class="mod accent">
-        <span class="mod-title">① CLIP keyframe detection</span>
         <span class="mod-name">CLIP encoder</span>
-        <span class="mod-sub">Δ = ‖CLIP(f<sub>t</sub>) − CLIP(f<sub>t−1</sub>)‖ · RBF-smoothed</span>
         <div class="delta-inset"><svg id="curveSvg" viewBox="0 0 320 100" preserveAspectRatio="none"></svg></div>
-        <div class="kf-tags" style="margin-top:auto">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--ink-soft);letter-spacing:.06em">peaks &gt; τ →</span>
+        <div class="kf-tags">
           <span class="kf-tag">KF@0</span>
           <span class="kf-tag">KF@35</span>
           <span class="kf-tag">KF@47</span>
@@ -311,11 +284,10 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
       </div>
     </div>
 
-    <!-- 2) TokenDrop block -->
-    <div class="block" style="left:266px;top:148px;width:280px;height:228px">
+    <!-- TokenDrop -->
+    <div class="block" style="left:254px;top:128px;width:280px;height:208px">
       <div class="mod accent">
-        <span class="mod-title">② TokenDrop · pixel diff vs reference KF</span>
-        <span class="mod-name">Patch-level sparsification</span>
+        <span class="mod-name">TokenDrop</span>
         <div class="td-row">
           <div class="td-thumb ref" id="tdRefThumb"></div>
           <div class="td-arrow-tiny">→</div>
@@ -324,108 +296,84 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
           <div class="td-grid" id="tdDiffGrid"></div>
         </div>
         <div class="td-caption">
-          <div>Reference<br>KF @ t=0</div>
-          <div>Current<br>KF @ t=35</div>
-          <div id="tdDiffLegend">— diff + bbox</div>
+          <div>KF₀ ref</div>
+          <div>KF<sub>t</sub></div>
+          <div>diff + bbox</div>
         </div>
-        <span class="mod-sub" style="margin-top:auto">keep bounding rectangle of significant patches → variable-length keyframe tokens</span>
       </div>
     </div>
 
-    <!-- 3) KF tokens output -->
-    <div class="block" style="left:572px;top:148px;width:160px;height:228px">
-      <div class="tok-out">
+    <!-- KF tokens output -->
+    <div class="block" style="left:560px;top:128px;width:200px;height:208px">
+      <div class="tok-out kf">
         <span class="tlabel">Keyframe tokens</span>
         <div class="kf-tok-mini" id="kfTokMini"></div>
-        <span class="mod-sub" style="text-align:center;align-self:center">full grid for KF₀<br>partial grid for later KFs</span>
       </div>
     </div>
 
-    <!-- ============ MT branch (bottom-half, left part) ============ -->
-    <!-- 4) Frame pairs -->
-    <div class="block" style="left:0;top:404px;width:200px;height:268px">
+    <!-- ============ MT branch (bottom-half) ============ -->
+    <!-- Frame pair (single) -->
+    <div class="block" style="left:0;top:360px;width:200px;height:160px">
       <div class="mod motion">
-        <span class="mod-title">③ Fixed Δ=8 windows</span>
-        <span class="mod-name">Frame pairs (t, t+8)</span>
-        <div class="pair-list" id="pairList"></div>
-        <span class="mod-sub" style="margin-top:auto;font-size:9px">5 windows × {anchor, future}</span>
-      </div>
-    </div>
-
-    <!-- 5) Frozen SigLIP -->
-    <div class="block" style="left:226px;top:404px;width:160px;height:268px">
-      <div class="mod frozen">
-        <span class="mod-frozen-tag">frozen</span>
-        <span class="mod-title">④ Visual encoder</span>
-        <span class="mod-name">SigLIP × 2</span>
-        <div style="display:flex;flex-direction:column;gap:8px;width:100%;margin-top:6px">
-          <div style="border:1px solid var(--frozen-border);background:#fff;border-radius:6px;padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--frozen-ink);letter-spacing:.06em">f<sub>t</sub> &nbsp;→&nbsp; (256, 1152)</div>
-          <div style="border:1px solid var(--frozen-border);background:#fff;border-radius:6px;padding:8px 10px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--frozen-ink);letter-spacing:.06em">f<sub>t+8</sub> →&nbsp; (256, 1152)</div>
+        <span class="mod-name">Frame pair</span>
+        <div class="pair-single">
+          <div class="pframe anchor" id="pairAnchor"></div>
+          <div class="pa">→</div>
+          <div class="pframe" id="pairFuture"></div>
         </div>
-        <span class="mod-sub" style="margin-top:auto;color:var(--frozen-ink);opacity:.85">shared weights · gradient-blocked</span>
+        <span class="pair-tag">(t, t+8) · 1 of 5 windows</span>
       </div>
     </div>
 
-    <!-- 6) MotionEncoder -->
-    <div class="block" style="left:412px;top:404px;width:200px;height:268px">
+    <!-- Frozen SigLIP -->
+    <div class="block" style="left:226px;top:360px;width:184px;height:160px">
+      <div class="mod frozen">
+        <span class="frozen-pill">frozen</span>
+        <span class="mod-name">SigLIP × 2</span>
+        <div class="siglip-stack">
+          <div class="siglip-tag">f<sub>t</sub> → (256, 1152)</div>
+          <div class="siglip-tag">f<sub>t+8</sub> → (256, 1152)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MotionEncoder -->
+    <div class="block" style="left:436px;top:360px;width:230px;height:160px">
       <div class="mod motion">
-        <span class="mod-title">⑤ MotionJEPA</span>
         <span class="mod-name">Motion encoder</span>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--motion);background:var(--motion-soft);border-radius:6px;padding:10px 12px;line-height:1.55;width:100%;text-align:left">
+        <div class="me-formula">
           motion = ME(<br>
           &nbsp;&nbsp;tok<sub>t</sub>, tok<sub>t+8</sub><br>
-          ) <span style="color:var(--ink-soft)">→ (B, M=1, D<sub>m</sub>)</span>
-        </div>
-        <span class="mod-sub" style="font-size:9px">predicts future-frame embedding from current-frame tokens; residual stored as motion token</span>
-        <div style="display:flex;align-items:center;gap:6px;margin-top:auto;align-self:flex-start">
-          <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--motion);font-weight:700">5×</span>
-          <div style="display:flex;gap:3px">
-            <div style="width:11px;height:22px;background:var(--motion);border-radius:2px"></div>
-            <div style="width:11px;height:22px;background:var(--motion);border-radius:2px"></div>
-            <div style="width:11px;height:22px;background:var(--motion);border-radius:2px"></div>
-            <div style="width:11px;height:22px;background:var(--motion);border-radius:2px"></div>
-            <div style="width:11px;height:22px;background:var(--motion);border-radius:2px"></div>
-          </div>
+          ) <span class="dim">→ (B, M=1, D<sub>m</sub>)</span>
         </div>
       </div>
     </div>
 
-    <!-- 7) MT tokens output -->
-    <div class="block" style="left:638px;top:404px;width:120px;height:268px">
-      <div class="tok-out" style="border-color:var(--motion);background:#f4f8ff">
-        <span class="tlabel" style="color:var(--motion)">Motion tokens</span>
+    <!-- MT tokens output -->
+    <div class="block" style="left:692px;top:360px;width:160px;height:160px">
+      <div class="tok-out mt">
+        <span class="tlabel">Motion tokens</span>
         <div class="mt-tok-mini">
-          <div class="mtok"></div>
-          <div class="mtok"></div>
-          <div class="mtok"></div>
-          <div class="mtok"></div>
-          <div class="mtok"></div>
+          <div class="mtok"></div><div class="mtok"></div><div class="mtok"></div>
+          <div class="mtok"></div><div class="mtok"></div>
         </div>
-        <span class="mod-sub" style="text-align:center;align-self:center;color:var(--motion);font-size:9px">M=1 token per window<br>5 motion tokens total</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--motion);letter-spacing:.04em">5 × M=1</span>
       </div>
     </div>
 
-    <!-- ============ History sequence (right column, full vertical) ============ -->
-    <div class="block" style="left:790px;top:148px;width:426px;height:524px">
+    <!-- ============ Combined History strip (horizontal, full width) ============ -->
+    <div class="block" style="left:0;top:548px;width:880px;height:96px">
       <div class="history">
-        <div class="history-head">
-          <span>⑥ Combined history token sequence</span>
-          <strong>8 events from 48 frames</strong>
-        </div>
-        <div class="history-body" id="historyBody"></div>
-        <div class="h-counter" id="historyCounter"></div>
+        <div class="history-name">Combined history token sequence</div>
+        <div class="history-row" id="historyRow"></div>
       </div>
     </div>
 
-    <!-- ============ Downstream policy (bottom right) ============ -->
-    <div class="block" style="left:790px;top:692px;width:426px;height:78px">
+    <!-- ============ Downstream policy (right of history) ============ -->
+    <div class="block" style="left:900px;top:548px;width:316px;height:96px">
       <div class="mod policy">
         <div class="policy">
-          <div class="policy-text">
-            <span class="mod-title">⑦ Conditioning</span>
-            <span class="name">Downstream Policy</span>
-            <span class="sub">VLM head · diffusion transformer · etc.</span>
-          </div>
+          <span class="name">Downstream Policy</span>
           <span class="arrow-out">→</span>
           <span class="action-out">Action a<sub>t</sub></span>
         </div>
@@ -435,15 +383,14 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
   </div>
 
   <!-- Caption -->
-  <div class="caption" id="caption">
+  <div class="caption">
     <b>Figure 1.</b> Overall architecture of our keyframe-MotionJEPA memory pipeline.
-    A 48-frame robot trajectory is reduced to a sparse keyframe set by CLIP Δ-distance peak detection (① τ-thresholded);
-    each later keyframe is then sparsified by ② TokenDrop, which keeps only the bounding rectangle of patches that
-    differ significantly from the reference keyframe at t=0. In parallel, every fixed Δ=8 window of frames (③) is
-    encoded by a frozen SigLIP pair (④) and compressed by a MotionJEPA encoder (⑤) into a single motion token. The two
-    streams are merged into a combined history sequence (⑥) aligned to the input timeline, yielding a compact memory
-    of <span id="capCount" style="font-family:'JetBrains Mono',monospace;color:var(--ink);font-style:normal">…</span>
-    that conditions the downstream policy (⑦) for action prediction.
+    A 48-frame trajectory is reduced to a sparse keyframe set by CLIP Δ-distance peak detection;
+    each later keyframe is sparsified by TokenDrop (bounding-rectangle of patches differing from KF₀).
+    In parallel, every fixed Δ=8 window is encoded by a frozen SigLIP pair and compressed by a
+    MotionJEPA encoder into a single motion token. The two streams are merged into a combined history
+    sequence that conditions the downstream policy, yielding a compact memory of
+    <span id="capCount" style="font-family:'JetBrains Mono',monospace;color:var(--ink);font-style:normal">…</span>.
   </div>
 </div>
 
@@ -453,7 +400,7 @@ footer{margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:10px;
 
 <script>
 /* =================================================================
-   Parameters (mirrors V2)
+   Parameters
 ================================================================= */
 const T = 48;
 const keyframes     = [0, 35, 47];
@@ -480,7 +427,7 @@ function rectPatchCount(rect){
 }
 
 /* =================================================================
-   frameSVG (ported from V2, unchanged)
+   frameSVG (synthetic robot scene)
 ================================================================= */
 let _gid = 0;
 function frameSVG(t){
@@ -523,7 +470,7 @@ function frameSVG(t){
 }
 
 /* =================================================================
-   patchGridSVG (ported from V2)
+   patchGridSVG
 ================================================================= */
 function patchGridSVG(opts){
   const N = 16;
@@ -571,7 +518,6 @@ function patchGridSVG(opts){
     f.innerHTML = frameSVG(t);
     f.title = `t=${t}`;
     row.appendChild(f);
-
     const s = document.createElement('span');
     if(isKf){ s.textContent = t; s.className='kf'; }
     else if(isMt){ s.textContent = t; s.className='mt'; }
@@ -581,7 +527,7 @@ function patchGridSVG(opts){
 })();
 
 /* =================================================================
-   Δ curve inset (CLIP block)
+   Δ curve inset (CLIP)
 ================================================================= */
 (function drawDeltaCurve(){
   const svg = document.getElementById('curveSvg');
@@ -590,7 +536,6 @@ function patchGridSVG(opts){
   const x = i => padL + (i/(T-1))*iW;
   const y = v => padT + iH - (v/maxY)*iH;
   const tau = 0.35;
-
   const curve = [];
   for(let t=0;t<T;t++){
     let v = 0.07 + Math.sin(t*.65)*.03 + (Math.random()*.04-.02);
@@ -598,18 +543,13 @@ function patchGridSVG(opts){
     curve.push(Math.max(0, v));
   }
   curve[0] = 0.02;
-
   let html = '';
-  // grid
   for(let g=0;g<=2;g++){
     const yy = padT + (g/2)*iH;
     html += `<line x1="${padL}" x2="${W-padR}" y1="${yy}" y2="${yy}" stroke="#e8dfcc" stroke-width=".5"/>`;
   }
-  // threshold
   html += `<line x1="${padL}" x2="${W-padR}" y1="${y(tau)}" y2="${y(tau)}" stroke="#d85400" stroke-width="1" stroke-dasharray="3 2.5" opacity=".7"/>`;
   html += `<text x="${W-padR-2}" y="${y(tau)-2}" font-family="JetBrains Mono" font-size="8" fill="#d85400" text-anchor="end">τ</text>`;
-
-  // smooth path
   let path = `M ${x(0)} ${y(curve[0])}`;
   for(let i=1;i<T;i++){
     const cx = (x(i-1) + x(i))/2;
@@ -620,10 +560,8 @@ function patchGridSVG(opts){
   </linearGradient></defs>`;
   html += `<path d="${path} L${x(T-1)} ${y(0)} L${x(0)} ${y(0)} Z" fill="url(#ag)" opacity=".26"/>`;
   html += `<path d="${path}" stroke="#1a1410" stroke-width="1.2" fill="none"/>`;
-
   for(let i=0;i<T;i++){
-    const kf = keyframes.includes(i);
-    if(kf){
+    if(keyframes.includes(i)){
       html += `<circle cx="${x(i)}" cy="${y(curve[i])}" r="3" fill="#d85400" stroke="#fff" stroke-width="1"/>`;
       html += `<text x="${x(i)}" y="${H-2}" font-family="JetBrains Mono" font-size="7" fill="#d85400" font-weight="700" text-anchor="middle">${i}</text>`;
     }
@@ -635,27 +573,17 @@ function patchGridSVG(opts){
 /* =================================================================
    TokenDrop demo
 ================================================================= */
-document.getElementById('tdRefThumb').innerHTML  = frameSVG(0);
-document.getElementById('tdCurThumb').innerHTML  = frameSVG(35);
-document.getElementById('tdDiffGrid').innerHTML  =
+document.getElementById('tdRefThumb').innerHTML = frameSVG(0);
+document.getElementById('tdCurThumb').innerHTML = frameSVG(35);
+document.getElementById('tdDiffGrid').innerHTML =
   patchGridSVG({ sigPatches: demoSig, fillRect: demoRect, ps: 7 });
 
-const demoKept = rectPatchCount(demoRect);
-const demoDiff = demoSig.length;
-const demoFill = Math.max(0, demoKept - demoDiff);
-document.getElementById('tdDiffLegend').innerHTML =
-  `<span style="color:var(--accent)">■</span>${demoDiff} <span style="color:var(--motion)">■</span>${demoFill}<br>${demoKept}/256 kept`;
-
-/* KF tokens mini display */
 (function buildKfTokMini(){
   const wrap = document.getElementById('kfTokMini');
-  // KF@0: full grid
   const items = [
-    { lbl:'KF₀ (256)',  svg: patchGridSVG({mode:'full', ps:3, frame:false}) },
-    { lbl:`KF₃₅ (${rectPatchCount(tdPatchData[35].rect)})`,
-      svg: patchGridSVG({mode:'partial', sigPatches:tdPatchData[35].sig, fillRect:tdPatchData[35].rect, ps:3, frame:false}) },
-    { lbl:`KF₄₇ (${rectPatchCount(tdPatchData[47].rect)})`,
-      svg: patchGridSVG({mode:'partial', sigPatches:tdPatchData[47].sig, fillRect:tdPatchData[47].rect, ps:3, frame:false}) },
+    { lbl:'KF₀',  svg: patchGridSVG({mode:'full', ps:3, frame:false}) },
+    { lbl:'KF₃₅', svg: patchGridSVG({mode:'partial', sigPatches:tdPatchData[35].sig, fillRect:tdPatchData[35].rect, ps:3, frame:false}) },
+    { lbl:'KF₄₇', svg: patchGridSVG({mode:'partial', sigPatches:tdPatchData[47].sig, fillRect:tdPatchData[47].rect, ps:3, frame:false}) },
   ];
   wrap.innerHTML = items.map(it =>
     `<div class="item"><div class="grid-mini">${it.svg}</div><div class="clab">${it.lbl}</div></div>`
@@ -663,25 +591,13 @@ document.getElementById('tdDiffLegend').innerHTML =
 })();
 
 /* =================================================================
-   Frame pairs list
+   Frame pair (single demo)
 ================================================================= */
-(function buildPairs(){
-  const list = document.getElementById('pairList');
-  motionWindows.forEach((w,i) => {
-    const row = document.createElement('div');
-    row.className = 'pair-row';
-    row.innerHTML = `
-      <span class="pidx">w${i+1}</span>
-      <div class="pframe anchor">${frameSVG(w.t0)}</div>
-      <div class="pa">→</div>
-      <div class="pframe">${frameSVG(w.t1)}</div>
-    `;
-    list.appendChild(row);
-  });
-})();
+document.getElementById('pairAnchor').innerHTML = frameSVG(0);
+document.getElementById('pairFuture').innerHTML = frameSVG(8);
 
 /* =================================================================
-   History sequence (vertical timeline)
+   History strip (horizontal, MemoryVLA-style)
 ================================================================= */
 const events = [
   {type:'kf', render:'full',    t:0},
@@ -705,60 +621,55 @@ function tokenCount(ev){
   return rectPatchCount(tdPatchData[ev.t]?.rect);
 }
 
-(function buildHistory(){
-  const body = document.getElementById('historyBody');
+(function buildHistoryRow(){
+  const row = document.getElementById('historyRow');
   events.forEach(ev => {
-    const lab = document.createElement('div');
-    lab.className = 'h-tlabel ' + ev.type;
-    lab.textContent = `t=${ev.t}`;
-    body.appendChild(lab);
-
-    const block = document.createElement('div');
-    block.className = 'h-event ' + ev.type;
-    const tokSvg = ev.type === 'mt' ? `<div class="mtb"></div>` : historyTokSVG(ev);
-    const cap = ev.type === 'mt'
-      ? `<b>MT@${ev.t}</b>motion · window [${ev.t0}→${ev.t1}] · M=1`
-      : `<b>KF@${ev.t}</b>keyframe · ${tokenCount(ev)} patches kept`;
-    block.innerHTML = `
-      <div class="h-tok">${tokSvg}</div>
-      <div class="h-cap">${cap}</div>
+    const cell = document.createElement('div');
+    cell.className = 'h-cell ' + ev.type;
+    const tokInner = ev.type === 'mt'
+      ? `<div class="mtb"></div>`
+      : historyTokSVG(ev);
+    const name = ev.type === 'mt' ? `MT@${ev.t}` : `KF@${ev.t}`;
+    cell.innerHTML = `
+      <div class="h-tok">${tokInner}</div>
+      <div class="h-name">${name}</div>
+      <div class="h-t">t=${ev.t}</div>
     `;
-    body.appendChild(block);
+    row.appendChild(cell);
   });
 })();
 
-/* counter row */
-(function buildCounter(){
+/* total token count (for caption only) */
+(function computeTotal(){
   const naive = T * 256;
-  let kfFull = 0, tdCount = 0, mtCount = 0;
+  let total = 0;
   events.forEach(ev => {
-    if(ev.type === 'mt') mtCount += 1;
-    else if(ev.render === 'full') kfFull += 256;
-    else tdCount += rectPatchCount(tdPatchData[ev.t]?.rect);
+    if(ev.type === 'mt') total += 1;
+    else if(ev.render === 'full') total += 256;
+    else total += rectPatchCount(tdPatchData[ev.t]?.rect);
   });
-  const total = kfFull + tdCount + mtCount;
   const ratio = ((total/naive)*100).toFixed(1);
-  document.getElementById('historyCounter').innerHTML = `
-    <div class="cell">Naive (T·256)<br><b>${naive.toLocaleString()}</b></div>
-    <div class="cell">Kept<br><b class="s">${total.toLocaleString()}</b></div>
-    <div class="cell">Compression<br><b>${ratio}%</b></div>
-    <div class="cell">KF₀ full<br><b class="a">${kfFull}</b></div>
-    <div class="cell">TokenDrop<br><b class="r">${tdCount}</b></div>
-    <div class="cell">Motion<br><b class="m">${mtCount}</b></div>
-  `;
   document.getElementById('capCount').innerHTML =
-    `<b>${total.toLocaleString()}</b> tokens (${ratio}% of the naive ${naive.toLocaleString()})`;
+    `<b>${total}</b> tokens (${ratio}% of the naive ${naive.toLocaleString()})`;
 })();
 
 /* =================================================================
    Arrow overlay
-   Coordinates correspond to the canvas viewBox 1216 × 780.
+   Canvas viewBox 1216 × 660
+   Anchors:
+     Input strip:    bottom y=104
+     CLIP:           x:0..228   y:128..336
+     TokenDrop:      x:254..534 y:128..336
+     KF tok out:     x:560..760 y:128..336
+     Frame pair:     x:0..200   y:360..520
+     SigLIP:         x:226..410 y:360..520
+     MotionEnc:      x:436..666 y:360..520
+     MT tok out:     x:692..852 y:360..520
+     History:        x:0..880   y:548..644
+     Policy:         x:900..1216 y:548..644
 ================================================================= */
 (function drawArrows(){
   const svg = document.getElementById('arrows');
-  const NS = 'http://www.w3.org/2000/svg';
-
-  // Common defs: arrowhead markers
   const defs = `
     <defs>
       <marker id="ah-ink" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
@@ -776,43 +687,29 @@ function tokenCount(ev){
     </defs>
   `;
 
-  // Arrow definitions — coordinates use the canvas viewBox (1216 × 780)
-  // Block left/right/top/bottom anchors:
-  //   Input strip:    bottom y=118, x range 0..1216
-  //   CLIP block:     left=0   top=148  right=240  bottom=376
-  //   TokenDrop:      left=266 top=148  right=546  bottom=376
-  //   KF tok out:     left=572 top=148  right=732  bottom=376
-  //   Frame pairs:    left=0   top=404  right=200  bottom=672
-  //   SigLIP:         left=226 top=404  right=386  bottom=672
-  //   MotionEncoder:  left=412 top=404  right=612  bottom=672
-  //   MT tok out:     left=638 top=404  right=758  bottom=672
-  //   History block:  left=790 top=148  right=1216 bottom=672
-  //   Policy block:   left=790 top=692  right=1216 bottom=770
   const arrows = [
-    // input(bottom) → CLIP(top)
-    { d:`M 120 118 V 148`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
-    // input(bottom) → Frame pairs(top): route through empty gap at x=559 (between TokenDrop and KF-tokens)
-    { d:`M 559 118 V 390 H 100 V 404`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
+    // Input → CLIP (drop down)
+    { d:`M 114 104 V 128`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
+    // Input → Frame pair (route through gap between TokenDrop right=534 and KF-out left=560 → x=547)
+    { d:`M 547 104 V 348 H 100 V 360`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
 
-    // CLIP → TokenDrop
-    { d:`M 240 262 H 266`, stroke:'#d85400', m:'ah-acc', w:1.6 },
-    // TokenDrop → KF tokens output
-    { d:`M 546 262 H 572`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    // KF branch horizontal
+    { d:`M 228 232 H 254`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    { d:`M 534 232 H 560`, stroke:'#d85400', m:'ah-acc', w:1.6 },
 
-    // Pairs → SigLIP
-    { d:`M 200 538 H 226`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    // SigLIP → MotionEncoder
-    { d:`M 386 538 H 412`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    // MotionEncoder → MT tokens
-    { d:`M 612 538 H 638`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    // MT branch horizontal
+    { d:`M 200 440 H 226`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 410 440 H 436`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 666 440 H 692`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
-    // KF tokens → History (curve right & down)
-    { d:`M 732 262 C 762 262, 762 320, 790 320`, stroke:'#d85400', m:'ah-acc', w:1.6 },
-    // MT tokens → History
-    { d:`M 758 538 C 775 538, 775 480, 790 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    // KF tokens → History: drop straight down through the empty x=666..692 corridor
+    // (between MotionEnc right=666 and MT-out left=692) to avoid crossing MT-row blocks
+    { d:`M 680 336 V 548`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    // MT tokens → History: drop straight down from MT-out bottom-center
+    { d:`M 772 520 V 548`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy
-    { d:`M 1003 672 V 692`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
+    { d:`M 880 596 H 900`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
   ];
 
   let body = defs;
@@ -821,7 +718,6 @@ function tokenCount(ev){
       ${a.dash?`stroke-dasharray="${a.dash}"`:''} ${a.op?`opacity="${a.op}"`:''}
       marker-end="url(#${a.m})" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
-
   svg.innerHTML = body;
 })();
 </script>
