@@ -139,11 +139,68 @@
 \section{Related Work}
 \label{sec:related}
 
-\paragraph{TODO: subtopic 1.} % e.g. self-supervised representation learning
+\paragraph{Memory-based Robotic Manipulation Models.}
+History-dependent manipulation has motivated a rapidly growing family of
+memory designs for VLA policies, but the design space remains fragmented.
+The most direct treatment is to feed history in as additional context:
+ContextVLA~[22] concatenates a sliding window of past visual tokens to the
+transformer input, while BC-RNN~[29] rolls history through a recurrent
+state. Both extremes scale poorly --- the former pays linear attention
+cost in horizon length, the latter compresses without selection. Recent
+state-space policies, including RoboMamba~[28] and MITL~[47], replace the
+RNN with Mamba-style updates~[18], preserving constant-memory recurrence
+while extending the effective context window.
 
-\paragraph{TODO: subtopic 2.} % e.g. latent world models / future-prediction representations
+A second line of work inserts an explicit \emph{memory bank} between the
+encoder and the policy and reads from it on demand. Hamlet~[24] and
+MemoryVLA~[33] cache past visual features together with auxiliary signals
+such as task instructions or cognitive summaries, and retrieve the
+relevant entries at each step; SAM2Act~[17] attaches a similar memory
+module to a video segmentation backbone so that object identity and
+action heatmaps remain stable across long horizons. MEM~[49] pushes this
+further by organizing embodied features at multiple temporal resolutions,
+while BPP~[50] recasts long-context imitation learning as the problem of
+selecting a small set of behaviorally relevant key history frames.
+HistRISE~[9] takes the structured-state view to its extreme, tracking
+object-centric 3D points as a non-differentiable symbolic memory.
 
-\paragraph{TODO: subtopic 3.} % e.g. domain-specific prior work
+A third, increasingly popular direction offloads memory entirely to a
+large vision-language model. UniVLA~[5] simply prepends past actions to
+the prompt, while MemER~[36], Gemini-Robotics-1.5~[38], and the steerable
+$\pi_{0.7}$ generalist~[48] rely on a VLM to produce language-based
+subgoals or natural-language plans that condition a downstream policy.
+This keeps the policy itself short-context, but introduces costly modular
+inference and breaks end-to-end optimization. Taken together, these works
+establish that memory is essential, yet they differ in backbone, in what
+is stored, and in how memory is integrated, making head-to-head
+comparison difficult --- the gap our controlled study targets, by
+training a family of memory-augmented VLAs on the same backbone and
+evaluating diverse representations and integration mechanisms in a
+unified setting.
+
+\paragraph{Efficient Video Representation for Robotic Manipulation.}
+Episodic robot videos are heavily redundant: adjacent frames differ only
+in a few interaction-relevant pixels, and most patches encode static
+background or the robot's own body. General video understanding addresses
+this with token-level pruning and resampling --- TimeChat-Online~[44]
+shows that roughly 80\% of visual tokens are naturally redundant in
+streaming video, and VideoLLM-online~[10] streams video into a language
+model under an incremental token budget. In manipulation the constraint
+is tighter still: a policy must run at control rate while keeping many
+seconds of history within a fixed token window. Robotic methods therefore
+aggregate frames at the encoder side --- ContextVLA~[22] amortizes
+multi-frame context into a compact history bundle, Hamlet~[24] turns a
+vanilla VLA into a history-aware policy by switching its inputs at
+inference time, and long-context diffusion policies~[39] supervise
+past-token prediction so that the compressed history retains causally
+relevant information. A complementary thread asks \emph{which} frames
+matter: BPP~[50] explicitly selects key history frames for imitation
+learning, and SAM2Act~[17] reuses a video segmentation foundation model
+to anchor object identity across long horizons. We build on these
+observations by combining TokenDropped keyframe patches with a
+MotionEncoder summary, decoupling sparse visual evidence from
+high-frequency motion structure and giving every memory variant the same
+fixed-size video representation budget.
 
 
 \section{Method}
@@ -517,7 +574,7 @@ once; Stage~2 is repeated for each (task, integration) configuration.
 
 \paragraph{Memory pipeline.}
 SigLIP2 provides $S\!=\!256$ patch tokens of
-width $E\!=\!1152$ per $384\!\times\!384$ frame. CLIP keyframe detection
+width $E\!=\!1152$ per $256\!\times\!256$ frame. CLIP keyframe detection
 uses an RBF smoother of width $3$ frames and a threshold $\tau$ tuned so
 that the average inter-keyframe gap is $\sim\!32$ frames. TokenDrop
 operates on the $16\!\times\!16$ patch grid; a patch is marked significant
@@ -525,7 +582,7 @@ when its mean per-pixel absolute RGB difference w.r.t. the previous
 keyframe exceeds $\delta\!=\!10^{-2}$, after which we add the patches
 inside the axis-aligned bounding rectangle of the significant set. The
 first keyframe is always retained in full at $S$ tokens. The MotionEncoder
-uses stride $\Delta\!=\!8$, $M\!=\!8$ readout queries, an
+uses an $8$-frame window at stride $\Delta\!=\!16$, $M\!=\!1$ readout query, an
 encoder-width $H\!=\!1024$, and a $4$-layer causal transformer (RMSNorm,
 1D-RoPE, SwiGLU). MotionDiT $g_\phi$ is a $6$-layer DiT with AdaLN-zero
 modulation and a tied gated input/output projection initialized to zero.
@@ -533,14 +590,15 @@ All memory-pipeline parameters total $\sim\!60$M; SigLIP2 and CLIP are
 frozen.
 
 \paragraph{Memory budget and compression.}
-We cap $\mathbf{M}_t$ at $B\!=\!512$ tokens of width $d\!=\!1024$ for all
-integration variants, padding with zeros when the assembled $\mathcal{M}$
-is shorter. Compared with the naive flattened representation of
+We cap the keyframe-token memory at $B\!=\!2000$ tokens of width
+$d\!=\!1024$; the MotionEncoder contributes up to $125$ motion tokens
+separately, giving a combined budget of $2000{+}125$, padding with zeros
+when shorter.  Compared with the naive flattened representation of
 $T\!\cdot\!S$ patch tokens per episode, this is a ${\sim}\,250\times$
-reduction at $T\!\approx\!500$, while preserving both the long-range
-keyframe anchors (the first keyframe contributes a full $S\!=\!256$ tokens)
-and short-range dynamics ($M\!=\!8$ motion tokens per $\Delta\!=\!8$
-frames).
+reduction at $T\!\approx\!2000$, while preserving both the long-range
+keyframe anchors (the first keyframe contributes a full $S\!=\!256$
+tokens) and short-range dynamics ($M\!=\!1$ motion token per
+$\Delta\!=\!16$-frame window).
 
 \paragraph{Backbone and training schedule.}
 The base $\pi_{0.5}$ policy processes $576$ context tokens ($512$ visual
@@ -691,6 +749,15 @@ TELOS/Springer--Verlag.
 [3] Hasselmo, M.E., Schnell, E.\ \& Barkai, E.\ (1995) Dynamics of learning and
 recall at excitatory recurrent synapses and cholinergic modulation in rat
 hippocampal region CA3. {\it Journal of Neuroscience} {\bf 15}(7):5249-5262.
+
+[48] Physical Intelligence.\ (2026) $\pi_{0.7}$: a Steerable Generalist
+Robotic Foundation Model with Emergent Capabilities.
+
+[49] Physical Intelligence.\ (2026) MEM: Multi-Scale Embodied Memory for
+Vision Language Action Models.
+
+[50] Sobol Mark, N.\ et al.\ (2026) BPP: Long-Context Robot Imitation Learning
+by Focusing on Key History Frames.
 }
 
 
