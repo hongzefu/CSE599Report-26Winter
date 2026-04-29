@@ -48,7 +48,7 @@ body::before{
 .canvas{
   position:relative;
   width:1216px;
-  height:640px;
+  height:720px;
   margin:0 auto;
 }
 @media (max-width: 1280px){
@@ -85,13 +85,13 @@ body::before{
 .mod.policy .mod-name{color:var(--policy-ink)}
 
 /* ---------- input strip ---------- */
-.input-strip .frames-row{display:grid;grid-template-columns:repeat(48,1fr);gap:2px;width:100%}
+.input-strip .frames-row{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;width:100%}
 .input-strip .frame{aspect-ratio:1/1;border-radius:3px;overflow:hidden;border:1.5px solid transparent;background:#e8dfcc;position:relative}
 .input-strip .frame svg{display:block;width:100%;height:100%}
 .input-strip .frame.kf{border-color:var(--accent);box-shadow:0 0 0 1.5px rgba(216,84,0,.18)}
 .input-strip .frame.mt{outline:1.5px solid rgba(47,111,214,.55);outline-offset:0}
 .input-strip .frame.inter{opacity:.45}
-.input-strip .axis-row{display:grid;grid-template-columns:repeat(48,1fr);gap:2px;
+.input-strip .axis-row{display:grid;grid-template-columns:repeat(24,1fr);gap:2px;
   font-family:'JetBrains Mono',monospace;font-size:8px;color:var(--ink-soft);
   text-align:center;margin-top:3px;line-height:1}
 .input-strip .axis-row span.kf{color:var(--accent);font-weight:700}
@@ -264,28 +264,34 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
 </div>
 
 <div class="figure">
-  <div class="canvas" id="canvas" style="height:640px">
+  <div class="canvas" id="canvas" style="height:720px">
 
     <!-- Arrow overlay -->
-    <svg class="arrows" id="arrows" viewBox="0 0 1216 640" preserveAspectRatio="none"></svg>
+    <svg class="arrows" id="arrows" viewBox="0 0 1216 720" preserveAspectRatio="none"></svg>
 
     <!-- ============ Input strip ============ -->
-    <div class="block" style="left:0;top:0;width:1216px;height:104px">
+    <div class="block" style="left:0;top:0;width:1216px;height:180px">
       <div class="mod" style="padding:8px 12px 9px">
         <div class="input-title">
           <span class="name">Robot trajectory · 48 RGB frames</span>
           <span class="meta">orange = keyframe (CLIP Δ peak) · blue edge = MT window (Δ=8)</span>
         </div>
         <div class="input-strip" style="width:100%">
-          <div class="frames-row" id="rawFrames"></div>
-          <div class="axis-row" id="rawIdx"></div>
+          <div>
+            <div class="frames-row" id="rawFrames0"></div>
+            <div class="axis-row" id="rawIdx0"></div>
+          </div>
+          <div style="margin-top:4px">
+            <div class="frames-row" id="rawFrames1"></div>
+            <div class="axis-row" id="rawIdx1"></div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- ============ KF branch (top-half) ============ -->
     <!-- CLIP -->
-    <div class="block" style="left:0;top:128px;width:260px;height:208px">
+    <div class="block" style="left:0;top:204px;width:260px;height:208px">
       <div class="mod accent">
         <span class="mod-name">CLIP encoder</span>
         <div class="delta-inset"><svg id="curveSvg" viewBox="0 0 320 100" preserveAspectRatio="none"></svg></div>
@@ -298,7 +304,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- TokenDrop (widened to absorb KF-out space) -->
-    <div class="block" style="left:286px;top:128px;width:420px;height:208px">
+    <div class="block" style="left:286px;top:204px;width:420px;height:208px">
       <div class="mod accent">
         <span class="mod-name">TokenDrop</span>
         <div class="td-row">
@@ -318,7 +324,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
 
     <!-- ============ MT branch (bottom-half) ============ -->
     <!-- Frame pair (single) -->
-    <div class="block" style="left:0;top:360px;width:200px;height:160px">
+    <div class="block" style="left:0;top:436px;width:200px;height:160px">
       <div class="mod motion">
         <span class="mod-name">Frame pair</span>
         <div class="pair-single">
@@ -331,7 +337,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- Frozen SigLIP -->
-    <div class="block" style="left:226px;top:360px;width:200px;height:160px">
+    <div class="block" style="left:226px;top:436px;width:200px;height:160px">
       <div class="mod frozen">
         <span class="frozen-pill">frozen</span>
         <span class="mod-name">SigLIP × 2</span>
@@ -343,7 +349,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- MotionEncoder (widened to absorb MT-out space) -->
-    <div class="block" style="left:452px;top:360px;width:260px;height:160px">
+    <div class="block" style="left:452px;top:436px;width:260px;height:160px">
       <div class="mod motion">
         <span class="mod-name">Motion encoder</span>
         <div class="me-formula">
@@ -355,7 +361,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ============ Combined History (right column, vertical) ============ -->
-    <div class="block" style="left:740px;top:128px;width:476px;height:420px">
+    <div class="block" style="left:740px;top:204px;width:476px;height:420px">
       <div class="history">
         <div class="history-name">Combined history token sequence</div>
         <div class="tok-sequence" id="tokSequence"></div>
@@ -363,7 +369,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ============ Downstream policy (below history, right column) ============ -->
-    <div class="block" style="left:740px;top:556px;width:476px;height:62px">
+    <div class="block" style="left:740px;top:632px;width:476px;height:62px">
       <div class="mod policy">
         <div class="policy">
           <span class="name">Downstream Policy</span>
@@ -501,21 +507,25 @@ function patchGridSVG(opts){
    Input strip
 ================================================================= */
 (function buildInput(){
-  const row = document.getElementById('rawFrames');
-  const idx = document.getElementById('rawIdx');
-  for(let t=0;t<T;t++){
-    const isKf = keyframes.includes(t);
-    const isMt = mtEdges.has(t);
-    const f = document.createElement('div');
-    f.className = 'frame ' + (isKf ? 'kf' : isMt ? 'mt' : 'inter');
-    f.innerHTML = frameSVG(t);
-    f.title = `t=${t}`;
-    row.appendChild(f);
-    const s = document.createElement('span');
-    if(isKf){ s.textContent = t; s.className='kf'; }
-    else if(isMt){ s.textContent = t; s.className='mt'; }
-    else if(t%8===0){ s.textContent = t; }
-    idx.appendChild(s);
+  const strips = [
+    { row: document.getElementById('rawFrames0'), idx: document.getElementById('rawIdx0'), start:0,  end:24 },
+    { row: document.getElementById('rawFrames1'), idx: document.getElementById('rawIdx1'), start:24, end:T  },
+  ];
+  for(const {row, idx, start, end} of strips){
+    for(let t=start;t<end;t++){
+      const isKf = keyframes.includes(t);
+      const isMt = mtEdges.has(t);
+      const f = document.createElement('div');
+      f.className = 'frame ' + (isKf ? 'kf' : isMt ? 'mt' : 'inter');
+      f.innerHTML = frameSVG(t);
+      f.title = `t=${t}`;
+      row.appendChild(f);
+      const s = document.createElement('span');
+      if(isKf){ s.textContent = t; s.className='kf'; }
+      else if(isMt){ s.textContent = t; s.className='mt'; }
+      else if(t%8===0){ s.textContent = t; }
+      idx.appendChild(s);
+    }
   }
 })();
 
@@ -685,24 +695,24 @@ function tokenGroupSVG(ev){
 
   const arrows = [
     // Input → CLIP (drop down at CLIP horizontal center)
-    { d:`M 130 104 V 128`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
+    { d:`M 130 180 V 204`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
     // Input → Frame pair (dashed) — route through CLIP/TokenDrop empty corridor x=273
-    { d:`M 273 104 V 348 H 100 V 360`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
+    { d:`M 273 180 V 424 H 100 V 436`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
 
     // KF branch horizontal
-    { d:`M 260 232 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    { d:`M 260 308 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
 
     // MT branch horizontal
-    { d:`M 200 440 H 226`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    { d:`M 426 440 H 452`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 200 516 H 226`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 426 516 H 452`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // TokenDrop (KF stream) → History (right column, KF row mid-y)
-    { d:`M 706 232 H 740`, stroke:'#d85400', m:'ah-acc', w:1.6 },
+    { d:`M 706 308 H 740`, stroke:'#d85400', m:'ah-acc', w:1.6 },
     // MotionEncoder (MT stream) → History (right column, MT row mid-y)
-    { d:`M 712 440 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 712 516 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy (vertical, inside right column)
-    { d:`M 978 548 V 556`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
+    { d:`M 978 624 V 632`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
   ];
 
   let body = defs;
