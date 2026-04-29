@@ -52,6 +52,7 @@
 \usepackage{hyperref}       % hyperlinks
 \usepackage{url}            % simple URL typesetting
 \usepackage{booktabs}       % professional-quality tables
+\usepackage{multirow}       % multi-row cells in tables
 \usepackage{amsfonts}       % blackboard math symbols
 \usepackage{amsmath}        % align, equation, etc.
 \usepackage{amssymb}        % \mathbb, \mathbf
@@ -567,16 +568,72 @@ disk to amortize cost across configurations.
 \label{sec:main-results}
 % TODO: main findings.
 
+\paragraph{Baselines.}
+We compare our method against five reference configurations and an
+extra backbone study, all instantiated under the
+\emph{Memory-as-Modulation} (MaM) integration mechanism so that
+differences are attributable to memory \emph{content} rather than
+\emph{injection}:
+\begin{itemize}
+  \item \textbf{MME-VLA Clip-Keyframe} retains every $16{\times}16$
+        token of the selected keyframes (\S\ref{sec:memory})
+        without compression, giving an upper-bound configuration of
+        $\sim\!8000{+}$ tokens.
+  \item \textbf{MME-VLA Clip-Keyframe + TokenDrop} adds the
+        temporal-saliency token-dropping policy on top, compressing the
+        memory to a fixed budget of $2000$ tokens.
+  \item \textbf{MME-VLA Clip-Keyframe + TokenDrop + Motion (Ours)}
+        further appends $125$ motion tokens that summarise short-range
+        dynamics, yielding a total budget of $2000{+}125$.
+  \item \textbf{MME-VLA Even Frame Sampling} is the naive frame-sampling
+        baseline (\S\ref{sec:memory}, FrameSamp): uniformly
+        spaced frames with pooled tokens, swept over budgets
+        $\{1024, 512, 256, 128, 64\}$ to characterise how purely
+        temporal subsampling degrades with shrinking memory.
+  \item \textbf{MME-VLA Even TokenDropping} is the naive token-dropping
+        baseline that ignores temporal-saliency scoring, swept over the
+        same five budgets to isolate the value of the
+        importance-weighted selection used by our method.
+  \item \textbf{Other backbones (OpenVLA, Qwen2.5-VL)} swap the
+        $\pi_{0.5}$ backbone for two alternative VLA backbones with the
+        same memory pipeline, probing how transferable the proposed
+        memory design is across model families.
+\end{itemize}
+
 \begin{table}[t]
-  \caption{TODO: main results. Brief description plus the key take-away message.}
+  \caption{Main results on RoboMME. We compare our \emph{Clip-Keyframe
+  + TokenDrop + Motion} memory against keyframe-only / token-drop
+  variants and the FrameSamp / TokenDrop budget sweeps, all under the
+  \emph{Memory-as-Modulation} integration mechanism. Success Rate is
+  reported in \%; \textit{ongoing} denotes runs whose evaluation has
+  not yet finished.}
   \label{tab:main}
   \centering
-  \begin{tabular}{lcc}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lccc}
     \toprule
-    Method   & Metric A & Metric B \\
+    Method & Integration & Memory Budget & Success Rate (\%) \\
     \midrule
-    Baseline & TODO     & TODO     \\
-    Ours     & TODO     & TODO     \\
+    \textbf{MME-VLA Clip-Keyframe + TokenDrop + Motion (Ours)} & Modulation & $2000{+}125$ & \textit{ongoing} \\
+    MME-VLA Clip-Keyframe                                      & Modulation & $8000{+}$    & \textit{ongoing} \\
+    MME-VLA Clip-Keyframe + TokenDrop                          & Modulation & $2000$       & \textit{ongoing} \\
+    \midrule
+    \multirow{5}{*}{MME-VLA Even Frame Sampling}
+        & Modulation & $1024$ & $45.87$ \\
+        & Modulation & $512$  & $44.51$ \\
+        & Modulation & $256$  & $42.90$ \\
+        & Modulation & $128$  & $36.54$ \\
+        & Modulation & $64$   & $30.42$ \\
+    \midrule
+    \multirow{5}{*}{MME-VLA Even TokenDropping}
+        & Modulation & $1024$ & $40.17$ \\
+        & Modulation & $512$  & $38.02$ \\
+        & Modulation & $256$  & $36.36$ \\
+        & Modulation & $128$  & $32.76$ \\
+        & Modulation & $64$   & $18.11$ \\
+    \midrule
+    Other backbones (OpenVLA, Qwen2.5-VL) & --- & --- & \textit{ongoing} \\
     \bottomrule
   \end{tabular}
 \end{table}
