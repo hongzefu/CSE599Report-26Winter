@@ -140,7 +140,7 @@
 
 \paragraph{TODO: subtopic 1.} % e.g. self-supervised representation learning
 
-\paragraph{TODO: subtopic 2.} % e.g. JEPA-style architectures
+\paragraph{TODO: subtopic 2.} % e.g. latent world models / future-prediction representations
 
 \paragraph{TODO: subtopic 3.} % e.g. domain-specific prior work
 
@@ -220,7 +220,7 @@ Thus all memory variants share the same interface
 We expose the memory sequence $\mathcal{M}$ produced in
 Sec.~\ref{sec:memory} to the backbone as this token block.
 The two-token-kind structure of $\mathcal{M}$ — TokenDropped keyframe patches
-and MotionJEPA motion tokens — is opaque to the backbone: from the policy's
+and MotionEncoder motion tokens — is opaque to the backbone: from the policy's
 perspective $\mathbf{M}_t$ is just a length-$B$ sequence of $d$-dimensional
 vectors carrying time tags.
 
@@ -292,7 +292,7 @@ parameters) to memory processing.
   \centering
   \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
   \caption{TODO: method overview figure. Left: offline memory pipeline
-    (CLIP keyframe detection $\to$ TokenDrop $\to$ MotionJEPA motion
+    (CLIP keyframe detection $\to$ TokenDrop $\to$ MotionEncoder motion
     tokens) producing $\mathbf{M}_t$. Right: the three injection sites in
     the $\pi_{0.5}$ backbone — Memory-as-Context into the VLM input,
     Memory-as-Modulator into AdaLN of the action expert, and
@@ -311,7 +311,7 @@ The memory passed to the VLA is a sparse, time-aligned sequence of two
 complementary token kinds drawn from a single robot video of length $T$:
 (i) \emph{keyframe tokens}, which anchor the scene at semantic transitions,
 and (ii) \emph{motion tokens}, fixed-stride summaries of short-range
-visual change produced by a JEPA-style encoder. Both kinds are produced
+visual change produced by a learned MotionEncoder. Both kinds are produced
 by frozen perception backbones at inference time, processing the current
 video stream and a synchronized proprioceptive trace independently of the
 VLA; no gradient flows back into these encoders during VLA training.
@@ -347,7 +347,7 @@ for downstream attention). The first keyframe $k_0$ is always kept in
 full ($S$ tokens); each subsequent keyframe contributes
 $|\mathcal{P}_i|\!\le\!S$ tokens. TokenDrop is also parameter-free.
 
-\paragraph{Motion tokens (MotionJEPA encoding).}
+\paragraph{Motion tokens.}
 Let $\Phi_{\mathrm{SigLIP}}\!:\!\mathbb{R}^{3\times H\times W}\!\to\!\mathbb{R}^{S\times E}$ ($S\!=\!256$ patches, $E\!=\!1152$) be the frozen SigLIP tokenizer, and let $x_t \!=\! \Phi_{\mathrm{SigLIP}}(I_t)\in\mathbb{R}^{S\times E}$; $\{s_t\}$ denotes the proprioceptive state sequence.
 Independently of keyframe placement, we tile the video with non-overlapping
 windows of fixed stride $\Delta$ (we use $\Delta\!=\!8$). For each window
@@ -390,16 +390,30 @@ i.e.\ keyframe tokens whose frame index is at most $\tau$, and motion tokens
 whose entire window $[t,\,t\!+\!\Delta]$ has elapsed by $\tau$.
 The sequence $\mathcal{M}_\tau$ grows monotonically: at each new step the
 pipeline appends newly completed tokens without recomputing earlier ones.
-
-\paragraph{Training objective.}
-Keyframe selection and TokenDrop are training-free, so the only learnable
+Keyframe selection and TokenDrop are training-free; the only learnable
 parameters in the memory pipeline are those of the MotionEncoder
-$f_\theta$. We train $f_\theta$ jointly with an auxiliary
-\emph{MotionDiT} decoder $g_\phi$ under a JEPA-style future-prediction
-objective on the SigLIP token space. Given $(x_t, x_{t+\Delta})$, we
-sample a diffusion-style timestep $k\!\sim\!\mathcal{U}\{1,\dots,K\}$
-and ask $g_\phi$ to predict the (token-normalized) future tokens from
-the current tokens, the motion code, and $k$:
+$f_\theta$, which is pre-trained in Stage~1 of Sec.~\ref{sec:objective}
+and then frozen. The trained $f_\theta$, together with the
+parameter-free keyframe and TokenDrop modules, is what ultimately writes
+into $\mathcal{M}$.
+
+\subsection{Training Objective}
+\label{sec:objective}
+
+The full system has two distinct loss surfaces, optimized in two stages:
+a latent future-prediction loss $\mathcal{L}_{\mathrm{pred}}$ that trains
+the MotionEncoder $f_\theta$ of Sec.~\ref{sec:memory}, and a flow-matching
+loss $\mathcal{L}_{\mathrm{FM}}$ that trains the VLA backbone together
+with the integration module.
+
+\paragraph{Latent future-prediction loss for $f_\theta$.}
+We train $f_\theta$ jointly with an auxiliary \emph{MotionDiT} decoder
+$g_\phi$: a conditional-diffusion decoder that regresses the SigLIP
+tokens of the future frame from the current tokens and the motion code.
+Given $(x_t, x_{t+\Delta})$, we sample a diffusion-style timestep
+$k\!\sim\!\mathcal{U}\{1,\dots,K\}$ and ask $g_\phi$ to predict the
+(token-normalized) future tokens from the current tokens, the motion
+code, and $k$:
 \begin{equation}
   \hat x_{t+\Delta}^{(k)} \;=\; g_\phi\!\left(\, x_t,\; m_t,\; k \,\right),
   \qquad m_t = f_\theta(x_t, x_{t+\Delta}, \Delta s_t),
@@ -417,26 +431,13 @@ input/output projection initialized to zero, so at $k\!=\!0$ the decoder
 acts as a normalized identity copy of $x_t$ and only learns residual
 corrections driven by $m_t$. This zero-initialized residual head is the
 sole reason the loss is stable when $f_\theta$ is randomly initialized:
-gradients flow through $g_\phi$ into $f_\theta$ only via the
-correction term, forcing $m_t$ to encode exactly the information needed
-to bridge $x_t \to x_{t+\Delta}$.
-
-Crucially, $g_\phi$ exists only during pre-training. At deployment the
-robot has already executed both endpoints of every motion window, so
-memory tokens are produced by a single forward pass through
-$\Phi_{\mathrm{SigLIP}}$ and $f_\theta$; no decoding is performed and
-$g_\phi$ is discarded. The trained $f_\theta$, together with the
-parameter-free keyframe and TokenDrop modules, is what ultimately writes
-into $\mathcal{M}$.
-
-\subsection{Training Objective}
-\label{sec:objective}
-
-The full system has two distinct loss surfaces, optimized in two stages:
-the JEPA-style future-prediction loss $\mathcal{L}_{\mathrm{pred}}$ that
-trains the MotionEncoder $f_\theta$ (already given in
-Sec.~\ref{sec:memory}), and a flow-matching loss $\mathcal{L}_{\mathrm{FM}}$
-that trains the VLA backbone together with the integration module.
+gradients flow through $g_\phi$ into $f_\theta$ only via the correction
+term, forcing $m_t$ to encode exactly the information needed to bridge
+$x_t \to x_{t+\Delta}$. Crucially, $g_\phi$ exists only during
+pre-training: at deployment the robot has already executed both endpoints
+of every motion window, so memory tokens are produced by a single forward
+pass through $\Phi_{\mathrm{SigLIP}}$ and $f_\theta$; no decoding is
+performed and $g_\phi$ is discarded.
 
 \paragraph{Flow-matching action loss.}
 Following $\pi_{0.5}$, the policy predicts an $H$-step action chunk
@@ -479,10 +480,10 @@ integration module is task-specific.
 
 \emph{Stage 1: Memory-pipeline pre-training.} On unlabeled robot videos we
 jointly train the MotionEncoder $f_\theta$ and the auxiliary MotionDiT
-decoder $g_\phi$ to minimize $\mathcal{L}_{\mathrm{pred}}$
-(Sec.~\ref{sec:memory}). The SigLIP and CLIP backbones, the keyframe
-detector, and the TokenDrop module are training-free throughout. After
-Stage~1, $g_\phi$ is discarded and $f_\theta$ is frozen.
+decoder $g_\phi$ to minimize $\mathcal{L}_{\mathrm{pred}}$. The SigLIP and
+CLIP backbones, the keyframe detector, and the TokenDrop module are
+training-free throughout. After Stage~1, $g_\phi$ is discarded and
+$f_\theta$ is frozen.
 
 \emph{Stage 2: VLA fine-tuning.} For every demonstration episode we
 \emph{pre-compute and cache} the full memory sequence $\mathcal{M}$
@@ -518,8 +519,8 @@ operates on the $16\!\times\!16$ patch grid; a patch is marked significant
 when its mean per-pixel absolute RGB difference w.r.t. the previous
 keyframe exceeds $\delta\!=\!10^{-2}$, after which we add the patches
 inside the axis-aligned bounding rectangle of the significant set. The
-first keyframe is always retained in full at $S$ tokens. The MotionJEPA
-encoder uses stride $\Delta\!=\!8$, $M\!=\!8$ readout queries, an
+first keyframe is always retained in full at $S$ tokens. The MotionEncoder
+uses stride $\Delta\!=\!8$, $M\!=\!8$ readout queries, an
 encoder-width $H\!=\!1024$, and a $4$-layer causal transformer (RMSNorm,
 1D-RoPE, SwiGLU). MotionDiT $g_\phi$ is a $6$-layer DiT with AdaLN-zero
 modulation and a tied gated input/output projection initialized to zero.
