@@ -307,17 +307,21 @@ parameters) to memory processing.
 % mechanism (how the VLA attends to or interleaves these tokens) is described
 % in Sec.~\ref{sec:arch}.
 
-The memory passed to the VLA is a sparse, time-aligned sequence of two
-complementary token kinds drawn from a single robot video of length $T$:
+As the robot executes, the memory $\mathcal{M}_\tau$ grows online from the
+history of observations accumulated prior to policy step $\tau$.  It is a
+sparse, time-aligned sequence of two complementary token kinds:
 (i) \emph{keyframe tokens}, which anchor the scene at semantic transitions,
 and (ii) \emph{motion tokens}, fixed-stride summaries of short-range
-visual change produced by a learned MotionEncoder. Both kinds are produced
-by frozen perception backbones at inference time, processing the current
-video stream and a synchronized proprioceptive trace independently of the
-VLA; no gradient flows back into these encoders during VLA training.
+visual change produced by a learned MotionEncoder. Both kinds are encoded
+strictly from already-elapsed frames: keyframe tokens are committed as soon
+as a keyframe is detected, and a motion token $m_t$ over window
+$[t,\,t\!+\!\Delta]$ becomes available only after step $t\!+\!\Delta$ has
+passed (Eq.~\ref{eq:mem-causal}). All encoding is performed by frozen
+perception backbones independently of the VLA; no gradient flows back into
+these encoders during VLA training.
 
 \paragraph{Keyframe detection.}
-Let $\{I_t\}_{t=0}^{T-1}\!\subset\!\mathbb{R}^{3\times H\times W}$ denote the input RGB frames.
+Let $\{I_t\}_{t \geq 0}\!\subset\!\mathbb{R}^{3\times H\times W}$ denote the sequence of RGB frames observed during execution.
 Keyframes mark moments of meaningful scene change (object pickup,
 contact events, viewpoint shifts). Each frame is scored by the smoothed
 discrete derivative of a frozen CLIP encoder $\Phi_{\mathrm{CLIP}}$:
@@ -579,6 +583,7 @@ disk to amortize cost across configurations.
 
 \subsection{Ablation Studies}
 \label{sec:ablation}
+
 % TODO: contribution of each component.
 
 \subsection{Analysis}
