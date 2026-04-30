@@ -191,54 +191,27 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ============ Diamond LEFT: MotionEncoder ============ -->
-    <div class="block" style="left:40px;top:215px;width:280px;height:150px">
+    <div class="block" style="left:40px;top:253px;width:280px;height:64px">
       <div class="mod motion">
-        <span class="corner-badge cb-motion">trainable</span>
         <span class="mod-name">MotionEncoder &nbsp;f<sub>θ</sub></span>
-        <span class="mod-desc">
-          Δx = x<sub>t+Δ</sub> − x<sub>t</sub>  ·  spatial pool<br>
-          + project Δs<sub>t</sub>  ·  + M learned queries<br>
-          causal transformer  ·  read-out tail
-        </span>
-        <span class="shape-chip motion" style="margin-top:auto">m<sub>t</sub> &nbsp; (B, M, D<sub>m</sub>)</span>
       </div>
     </div>
 
-    <!-- Δs_t side input chip (above MotionEncoder) -->
-    <div class="block" style="left:130px;top:178px;width:100px;height:24px;text-align:center">
-      <span class="shape-chip muted">Δs<sub>t</sub> &nbsp; proprio</span>
+    <!-- side input chip (above MotionEncoder) -->
+    <div class="block" style="left:80px;top:178px;width:200px;height:24px;text-align:center">
+      <span class="shape-chip muted">Δrobot state &nbsp;+&nbsp; Δt</span>
     </div>
 
     <!-- ============ Diamond RIGHT: MotionDiT ============ -->
-    <div class="block" style="left:896px;top:215px;width:280px;height:150px">
+    <div class="block" style="left:896px;top:253px;width:280px;height:64px">
       <div class="mod train">
-        <span class="corner-badge cb-train">training-only</span>
         <span class="mod-name">MotionDiT &nbsp;g<sub>φ</sub></span>
-        <span class="mod-desc">
-          AdaLN-Zero(k)  ·  N × DiT blocks<br>
-          cross-attn / FiLM(m<sub>t</sub>)<br>
-          zero-init residual head over LN(x<sub>t</sub>)
-        </span>
-        <span class="shape-chip accent" style="margin-top:auto">x̂<sub>t+Δ</sub><sup>(k)</sup> &nbsp; (B, 256, 1152)</span>
       </div>
     </div>
 
-    <!-- k chip (above MotionDiT) -->
-    <div class="block" style="left:986px;top:175px;width:100px;height:30px;text-align:center">
-      <span class="k-chip">timestep k</span>
-    </div>
-
-    <!-- ============ Loss equation block ============ -->
-    <div class="block" style="left:330px;top:570px;width:556px;height:60px">
-      <div class="mod loss">
-        <div class="loss-box">
-          <span class="loss-name">ℒ<sub>pred</sub> &nbsp;·&nbsp; latent future-prediction loss</span>
-          <span class="loss-eq">
-            =&nbsp;<i>𝔼</i><sub>t,k</sub>&nbsp;
-            ‖&nbsp;x̂<sub>t+Δ</sub><sup>(k)</sup>&nbsp;−&nbsp;TokenNorm(x<sub>t+Δ</sub>)&nbsp;‖<sub>2</sub><sup>2</sup>
-          </span>
-        </div>
-      </div>
+    <!-- side input chip (above MotionDiT) -->
+    <div class="block" style="left:936px;top:178px;width:200px;height:24px;text-align:center">
+      <span class="shape-chip muted">Δrobot state &nbsp;+&nbsp; Δt</span>
     </div>
 
   </div>
@@ -250,13 +223,15 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     the trainable <i>MotionEncoder</i> f<sub>θ</sub>, and the training-only decoder
     <i>MotionDiT</i> g<sub>φ</sub>. Every solid green edge silently passes its frame
     through the same frozen SigLIP backbone, so each carries a
-    (B, 256, 1152) patch-token grid — drawing the SigLIP module is omitted to keep
-    the data flow visible. f<sub>θ</sub> consumes the SigLIP features of both frames and
-    the proprio delta Δs<sub>t</sub>, and emits the motion code m<sub>t</sub>.
-    g<sub>φ</sub> takes the SigLIP features of I<sub>t</sub>, the motion code m<sub>t</sub>,
-    and a diffusion timestep k, and is supervised against the SigLIP features of
-    I<sub>t+Δ</sub> via the L<sub>2</sub> loss ℒ<sub>pred</sub>. At deployment g<sub>φ</sub>
-    is discarded — only m<sub>t</sub> is exposed to the policy.
+    (256, 1152) patch-token grid — drawing the SigLIP module is omitted to keep
+    the data flow visible. Both f<sub>θ</sub> and g<sub>φ</sub> additionally take the
+    same conditioning tag (Δrobot state, Δt). f<sub>θ</sub> consumes the SigLIP
+    features of both frames and emits the motion code m<sub>t</sub>;
+    g<sub>φ</sub> takes the SigLIP features of I<sub>t</sub>, the motion code
+    m<sub>t</sub>, and an internal diffusion timestep k, and is supervised against
+    the SigLIP features of I<sub>t+Δ</sub> via the L<sub>2</sub> loss
+    ℒ<sub>pred</sub> shown on the dashed edge. At deployment g<sub>φ</sub> is
+    discarded — only m<sub>t</sub> is exposed to the policy.
   </div>
 </div>
 
@@ -333,21 +308,21 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
   /* Diagonal arrows of the diamond + horizontal motion link + vertical chip drops */
   const arrows = [
     /* (1) I_t bottom-left  → MotionEncoder top-right    [SigLIP feature]  */
-    { d:`M 538 155 L 322 215`, c:'#3a5a40', m:'ah-froz', w:1.6 },
+    { d:`M 538 155 L 322 253`, c:'#3a5a40', m:'ah-froz', w:1.6 },
     /* (2) I_t bottom-right → MotionDiT     top-left     [SigLIP feature]  */
-    { d:`M 678 155 L 894 215`, c:'#3a5a40', m:'ah-froz', w:1.6 },
+    { d:`M 678 155 L 894 253`, c:'#3a5a40', m:'ah-froz', w:1.6 },
     /* (3) I_{t+Δ} top-left → MotionEncoder bottom-right [SigLIP feature]  */
-    { d:`M 538 420 L 322 365`, c:'#3a5a40', m:'ah-froz', w:1.6 },
+    { d:`M 538 420 L 322 317`, c:'#3a5a40', m:'ah-froz', w:1.6 },
     /* (4) MotionEncoder right-mid → MotionDiT left-mid  [motion_tokens]   */
-    { d:`M 320 290 L 894 290`, c:'#2f6fd6', m:'ah-acc', w:2.0 },
+    { d:`M 320 285 L 894 285`, c:'#2f6fd6', m:'ah-acc', w:2.0 },
     /* (5) MotionDiT bottom-left → I_{t+Δ} top-right     [L2 loss / ℒ_pred]
        Drawn as dashed purple, denoting the supervisory comparison edge.   */
-    { d:`M 896 365 L 680 420`, c:'#5b3f80', m:'ah-loss', w:1.7, dash:'6 4' },
+    { d:`M 896 317 L 680 420`, c:'#5b3f80', m:'ah-loss', w:1.7, dash:'6 4' },
 
-    /* (6) Δs_t chip → MotionEncoder top                                    */
-    { d:`M 180 202 V 215`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
-    /* (7) k chip → MotionDiT top                                           */
-    { d:`M 1036 205 V 215`, c:'#5b3f80', m:'ah-acc', w:1.4 },
+    /* (6) side chip → MotionEncoder top                                    */
+    { d:`M 180 202 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
+    /* (7) side chip → MotionDiT top                                        */
+    { d:`M 1036 202 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
   ];
 
   let body = defs;
@@ -358,26 +333,31 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
       marker-end="url(#${a.m})" stroke-linecap="round" stroke-linejoin="round"/>`;
   });
 
-  /* ---- arrow labels (horizontal text, placed near midpoints) ---- */
+  /* ---- arrow labels (horizontal text, kept off-line of every arrow) ---- */
   const labels = [
-    /* arrow 1 — I_t → MotionEncoder.  midpoint (430, 185).  text above-left */
-    { x:355, y:170, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
-    { x:355, y:184, text:'(B, 256, 1152)', fill:'#3a5a40', sz:9.5,                 anchor:'start' },
+    /* arrow 1 — I_t → MotionEncoder. label at far-left, above the diagonal */
+    { x:330, y:166, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
+    { x:330, y:180, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'start' },
 
-    /* arrow 2 — I_t → MotionDiT.       midpoint (786, 185).  text above-right */
-    { x:861, y:170, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'end' },
-    { x:861, y:184, text:'(B, 256, 1152)', fill:'#3a5a40', sz:9.5,                 anchor:'end' },
+    /* arrow 2 — I_t → MotionDiT. label at far-right, above the diagonal */
+    { x:886, y:166, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'end' },
+    { x:886, y:180, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'end' },
 
-    /* arrow 3 — I_{t+Δ} → MotionEncoder. midpoint (430, 392.5).  text above-left */
-    { x:355, y:386, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
-    { x:355, y:400, text:'(B, 256, 1152)', fill:'#3a5a40', sz:9.5,                 anchor:'start' },
+    /* arrow 3 — I_{t+Δ} → MotionEncoder. label midway between encoder bottom and frame top */
+    { x:330, y:348, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
+    { x:330, y:362, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'start' },
 
-    /* arrow 4 — MotionEncoder → MotionDiT (horizontal). midpoint (608, 290).  */
-    { x:608, y:280, text:'motion_tokens  m_t  ·  (B, M, D_m)', fill:'#2f6fd6', sz:11.5, anchor:'middle' },
+    /* arrow 4 — MotionEncoder → MotionDiT (horizontal y=285). label above */
+    { x:608, y:264, text:'motion_tokens  m_t', fill:'#2f6fd6', sz:11.5, anchor:'middle' },
+    { x:608, y:278, text:'(M, D_m)',           fill:'#2f6fd6', sz:9.5,  anchor:'middle' },
 
-    /* arrow 5 — MotionDiT → I_{t+Δ} (loss).  midpoint (788, 392.5).  */
-    { x:861, y:386, text:'ℒ_pred  ·  L2 loss', fill:'#5b3f80', sz:11, italic:true, anchor:'end' },
-    { x:861, y:400, text:'supervision', fill:'#5b3f80', sz:9.5, anchor:'end' },
+    /* arrow 5 — MotionDiT → I_{t+Δ} (loss).  ℒ_pred equation placed to the
+       right of the I_{t+Δ} card, below the dashed arrow so text never crosses
+       the line.                                                               */
+    { x:700, y:494, text:'ℒ_pred  ·  latent future-prediction loss',
+      fill:'#5b3f80', sz:11.5, italic:true, anchor:'start' },
+    { x:700, y:512, text:'= 𝔼_{t,k}  ‖ x̂_{t+Δ}^{(k)} − TokenNorm(x_{t+Δ}) ‖₂²',
+      fill:'#5b3f80', sz:11.5, anchor:'start' },
   ];
   labels.forEach(l => {
     body += `<text x="${l.x}" y="${l.y}" text-anchor="${l.anchor||'middle'}"
