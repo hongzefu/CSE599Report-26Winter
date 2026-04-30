@@ -217,12 +217,10 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- ℒpred KaTeX overlay — placed beside dashed loss arrow -->
+    <!-- ℒpred — adjust left/top to reposition -->
     <div class="block" id="loss-katex-block"
-         style="left:690px;top:355px;width:510px;
-                color:#5b3f80;line-height:1.5;pointer-events:none">
-      <div id="loss-katex-line1" style="font-family:'Fraunces',serif;font-size:12px;
-           font-style:italic;color:#5b3f80;margin-bottom:2px"></div>
-      <div id="loss-katex-line2" style="font-size:13px;"></div>
+         style="left:790px;top:390px;color:#5b3f80;pointer-events:none">
+      <div id="loss-katex"></div>
     </div>
 
   </div>
@@ -379,13 +377,8 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
 function renderLoss(){
   if(typeof katex === 'undefined'){ setTimeout(renderLoss, 50); return; }
   katex.render(
-    '\\mathcal{L}_{\\text{pred}} \\;\\cdot\\; \\text{latent future-prediction loss}',
-    document.getElementById('loss-katex-line1'),
-    { throwOnError:false, displayMode:false }
-  );
-  katex.render(
-    '= \\mathbb{E}_{t,k}\\,\\bigl\\|\\,\\hat{x}_{t+\\Delta}^{(k)} - \\operatorname{TokenNorm}(x_{t+\\Delta})\\,\\bigr\\|_2^2',
-    document.getElementById('loss-katex-line2'),
+    '\\mathcal{L}_{\\text{pred}} = \\mathbb{E}_{t,k}\\,\\bigl\\|\\,\\hat{x}_{t+\\Delta}^{(k)} - \\operatorname{TokenNorm}(x_{t+\\Delta})\\,\\bigr\\|_2^2',
+    document.getElementById('loss-katex'),
     { throwOnError:false, displayMode:false }
   );
 }
