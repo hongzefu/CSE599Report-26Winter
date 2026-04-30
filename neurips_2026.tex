@@ -542,12 +542,12 @@ once; Stage~2 is repeated for each task and integration configuration.
 We cap the keyframe-token memory at $B\!=\!2000$ tokens of width
 $d\!=\!1024$; the MotionEncoder contributes up to $125$ motion tokens
 separately, giving a combined budget of $2000{+}125$, padding with zeros
-when shorter.  Compared with the naive flattened representation of
-$T\!\cdot\!S$ patch tokens per episode, this is a ${\sim}\,250\times$
-reduction at $T\!\approx\!2000$, while preserving both the long-range
-keyframe anchors, where the first keyframe contributes a full $S\!=\!256$
-tokens, and short-range dynamics, with $M\!=\!1$ motion token per
-$\Delta\!=\!16$-frame window.
+when shorter.  Compared with the MME-VLA Clip-Keyframe upper bound---which retains every
+token of selected keyframes without compression at roughly $8000{+}$ tokens---our
+Clip-KF+TokenDrop+Motion memory fits within $2000{+}125$ tokens, while
+preserving both the long-range keyframe anchors, where the first keyframe
+contributes a full $S\!=\!256$ tokens, and short-range dynamics, with
+$M\!=\!1$ motion token per $\Delta\!=\!16$-frame window.
 
 % \paragraph{Backbone and training schedule.}
 % The base $\pi_{0.5}$ policy processes $576$ context tokens ($512$ visual
@@ -626,7 +626,7 @@ All configurations share the $\pi_{0.5}$ backbone and MaM integration,
 so differences are attributable to memory \emph{content}:
 \begin{itemize}
   \item \textbf{MME-VLA Clip-Keyframe}: retains every token of selected
-        keyframes without compression, roughly $8000{+}$ tokens, serving as an upper bound.
+        keyframes without patch-level compression, capped at $5120$ tokens, serving as an upper bound.
   \item \textbf{MME-VLA Clip-Keyframe + TokenDrop}: adds delta-based patch
         retention, compressing to a fixed budget of $2000$ tokens.
   \item \textbf{MotionVLA, Ours --- Clip-KF + TokenDrop + Motion}: further
