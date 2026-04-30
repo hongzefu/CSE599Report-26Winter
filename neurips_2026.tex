@@ -97,7 +97,7 @@ evidence shows that perceptual memory representations
 dominate motion-centric and time-sensitive tasks, but its concrete
 instantiations --- uniform frame sampling and temporal-saliency-agnostic
 token dropping --- are content-blind and degrade sharply as the memory
-budget tightens, while symbolic / language-subgoal memory cannot adequately
+budget tightens, while symbolic memory cannot adequately
 represent low-level continuous motion. We introduce \textbf{MotionVLA}, a robot-specialized
 perceptual memory that decouples \emph{what} the robot saw from \emph{how}
 things moved between observations: a CLIP-derivative keyframe selector with
@@ -272,7 +272,7 @@ vectors carrying time tags.
 \paragraph{Three integration mechanisms.}
 We systematically study three places at which $\mathbf{M}_t$ can enter the
 backbone, trading parameter count, attention budget, and isolation of the
-pretrained VLM features against each other.
+pretrained VLM features against each other, following \citet{dai2026robomme}.
 
 \emph{(1) Memory-as-Context (MaC).} Memory tokens are concatenated with the
 standard image and language inputs of the VLM expert and jointly processed.
@@ -636,7 +636,7 @@ so differences are attributable to memory \emph{content}:
         frames with pooled tokens, swept over $B\!\in\!\{1024,512,256,128,64\}$.
   \item \textbf{MME-VLA Even TokenDropping (ETD)}: saliency-agnostic patch
         dropping, swept over the same five budgets.
-  \item \textbf{Alternative backbones} (OpenVLA, Qwen2.5-VL): same memory
+  \item \textbf{Alternative backbones} (OpenVLA, Qwen3.5-VL): same memory
         pipeline on different VLA families, probing transferability.
 \end{itemize}
 
@@ -655,9 +655,9 @@ so differences are attributable to memory \emph{content}:
     \toprule
     Method & Integration & Memory Budget & Success Rate (\%) \\
     \midrule
-    \textbf{MotionVLA (Ours): Clip-KF + TokenDrop + Motion} & Modulation & $2000{+}125$ & \textit{ongoing} \\
-    MME-VLA Clip-Keyframe                                      & Modulation & $8000{+}$    & \textit{ongoing} \\
-    MME-VLA Clip-Keyframe + TokenDrop                          & Modulation & $2000$       & \textit{ongoing} \\
+    \textbf{MotionVLA: Clip-KF + TokenDrop + Motion} & Modulation & $2000{+}125$ & \textit{ongoing} \\
+    MotionVLA: Clip-KF                                     & Modulation & $8000{+}$    & \textit{ongoing} \\
+     MotionVLA: Clip-KF + TokenDrop                          & Modulation & $2000$       & \textit{ongoing} \\
     \midrule
     \multirow{5}{*}{MME-VLA Even Frame Sampling}
         & Modulation & $1024$ & $45.87$ \\
@@ -673,7 +673,8 @@ so differences are attributable to memory \emph{content}:
         & Modulation & $128$  & $32.76$ \\
         & Modulation & $64$   & $18.11$ \\
     \midrule
-    Other backbones (OpenVLA, Qwen2.5-VL) & --- & --- & \textit{ongoing} \\
+    Other backbones (OpenVLA, Qwen3.5-VL) & --- & --- & \textit{ongoing} \\
+    Other Intergration (Context, Expert) & --- & --- & \textit{ongoing} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -696,7 +697,7 @@ remaining question; those rows are still running.
 A full ablation over (i)~keyframe selection (CLIP vs.\ uniform),
 (ii)~TokenDrop on/off, (iii)~motion tokens on/off,
 (iv)~integration mechanism (MaC/MaM/MaE), and (v)~backbone
-(OpenVLA, Qwen2.5-VL) is currently running; results will replace the
+(OpenVLA, Qwen3.5-VL) is currently running; results will replace the
 \textit{ongoing} cells in Tab.~\ref{tab:main}.
 
 \subsection{Analysis}
