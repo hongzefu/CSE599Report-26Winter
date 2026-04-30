@@ -258,9 +258,8 @@ memory state $\mathbf{M}_t$:
 where $\mathbf{M}_t$ is the length-$B$ projection of the causal prefix
 $\mathcal{M}_t$ defined in Eq.~\ref{eq:mem-causal}, containing only observations and
 motion windows that have fully elapsed before step $t$.
-For fair comparison across designs, we allocate a fixed memory token budget $B$
-for all memory-based models: each representation produces at most $B$ tokens;
-if fewer are available, the sequence is zero-padded.
+The budget $B$ is a per-configuration hyperparameter: each representation
+produces at most $B$ tokens; if fewer are available, the sequence is zero-padded.
 Thus all memory variants share the same interface
 \begin{equation}
   \mathbf{M}_t \;\in\; \mathbb{R}^{B\times d}.
@@ -268,10 +267,7 @@ Thus all memory variants share the same interface
 \end{equation}
 We expose the memory sequence $\mathcal{M}$ produced in
 Sec.~\ref{sec:memory} to the backbone as this token block.
-The two-token-kind structure of $\mathcal{M}$ — TokenDropped keyframe patches
-and MotionEncoder motion tokens — is opaque to the backbone: from the policy's
-perspective $\mathbf{M}_t$ is just a length-$B$ sequence of $d$-dimensional
-vectors carrying time tags.
+
 
 \paragraph{Three integration mechanisms.}
 We systematically study three places at which $\mathbf{M}_t$ can enter the
@@ -391,29 +387,29 @@ Since $m_t$ requires both endpoints of window $[t,\,t\!+\!\Delta]$, it becomes
 causally available only at step $t\!+\!\Delta$.
 
 \paragraph{Memory sequence assembly.}
-MotionVLA assembles the final memory for an episode as the time-ordered concatenation
-\begin{equation}
-  \mathcal{M} \;=\; \big[\, x_{k_0}^{\mathrm{full}},\; m_{0},\; m_{\Delta},\; \dots,\; x_{k_i}^{\mathrm{TD}},\; \dots \,\big],
-\end{equation}
-where each entry carries its source timestamp as a positional tag.
-At policy step $\tau$, the policy receives the causally valid prefix
+MotionVLA maintains a \emph{streaming memory buffer} $\mathcal{M}_\tau$ that
+grows online as the episode unfolds.  At policy step $\tau$, the buffer
+requires no new raw observation; it already contains the complete
+causally valid token sequence
 \begin{equation}
   \mathcal{M}_\tau \;=\;
-    \bigl\{\,x_{k_j}^{\cdot} : k_j \leq \tau\,\bigr\}
+    \bigl[\,x_{k_j}^{\cdot} : k_j \leq \tau\,\bigr]
     \;\cup\;
-    \bigl\{\,m_t : t + \Delta \leq \tau\,\bigr\},
+    \bigl[\,m_t : t + \Delta \leq \tau\,\bigr],
   \label{eq:mem-causal}
 \end{equation}
-i.e.\ keyframe tokens whose frame index is at most $\tau$, and motion tokens
-whose entire window $[t,\,t\!+\!\Delta]$ has elapsed by $\tau$.
-The sequence $\mathcal{M}_\tau$ grows monotonically: at each new step the
-pipeline appends newly completed tokens without recomputing earlier ones.
+i.e.\ the time-ordered sequence of keyframe tokens whose frame index is at
+most $\tau$, and motion tokens whose entire window $[t,\,t\!+\!\Delta]$ has
+elapsed by $\tau$, each entry carrying its source timestamp as a positional
+tag.  The buffer grows monotonically: whenever a new keyframe is detected or
+a motion window $[t,\,t\!+\!\Delta]$ completes, the corresponding tokens are
+appended to $\mathcal{M}_\tau$ without recomputing any earlier entry.
 Keyframe selection and TokenDrop are training-free; the only learnable
 parameters in the memory pipeline are those of the MotionEncoder
 $f_\theta$, which is pre-trained in Stage~1 of Sec.~\ref{sec:objective}
-and then frozen. The trained $f_\theta$, together with the
+and then frozen.  The trained $f_\theta$, together with the
 parameter-free keyframe and TokenDrop modules, is what ultimately writes
-into $\mathcal{M}$.
+into $\mathcal{M}_\tau$.
 
 \subsection{Training Objective}
 \label{sec:objective}
