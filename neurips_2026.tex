@@ -95,9 +95,11 @@ motions all require retaining many seconds of visual history while the
 policy runs at control rate within a fixed token budget. Recent benchmark
 evidence shows that perceptual memory representations
 dominate motion-centric and time-sensitive tasks, but its concrete
-instantiations --- uniform frame sampling and temporal-saliency-agnostic
-token dropping --- are content-blind and degrade sharply as the memory
-budget tightens, while symbolic memory cannot adequately
+instantiations --- ranging from VLM-scored to uniform frame selection and
+temporal-saliency-agnostic token dropping --- share two weaknesses: frame-based
+methods encode no explicit inter-frame motion signal regardless of how frames
+are selected, while token dropping cannot preserve within-frame spatial
+completeness; both degrade sharply as the memory budget tightens, while symbolic memory cannot adequately
 represent low-level continuous motion. We introduce \textbf{MotionVLA}, a robot-specialized
 perceptual memory that decouples \emph{what} the robot saw from \emph{how}
 things moved between observations: a CLIP-derivative keyframe selector with
@@ -135,9 +137,10 @@ Existing memory designs fall into two families, each with limitations.
 discretizes history into language subgoals; controlled evaluation~\citep{dai2026robomme}
 shows it under-specifies continuous motion. \emph{Perceptual} memory retains
 raw visual tokens~\citep{jang2025contextvla,koo2025hamlet,fang2025sam2act,shi2026memoryvla,physicalintelligence2026mem}
-and is empirically stronger, but the two perceptual instantiations in that study
---- uniform frame sampling and saliency-agnostic token dropping --- are
-content-blind and degrade steeply as the memory budget shrinks.
+and is empirically stronger, but its two perceptual instantiations have
+complementary blind spots: frame-based methods (VLM-scored or uniform) discard
+inter-frame motion, while token dropping loses within-frame spatial completeness,
+and both degrade as the budget shrinks.
 
 Robot videos have complementary structure: a few moments that genuinely
 matter (contact events, viewpoint shifts) and predictable motion in between.
