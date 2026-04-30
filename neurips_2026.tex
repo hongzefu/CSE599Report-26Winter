@@ -108,9 +108,9 @@ summarizes each short window into a single compact motion
 token. The combined sequence is exposed to the $\pi_{0.5}$ backbone
 through a fixed-budget memory interface compatible with all three
 Memory-as-Context, -Modulator, and -Expert integration mechanisms used in
-the MME-VLA suite, enabling apples-to-apples
-comparison against uniform-frame-sampling and token-dropping baselines at
-matched memory budgets. Full quantitative evaluation on RoboMME is
+the MME-VLA suite, enabling a controlled comparison of memory content
+against uniform-frame-sampling and token-dropping baselines under
+identical backbone and integration conditions. Full quantitative evaluation on RoboMME is
 \emph{in progress} (Sec.~\ref{sec:exp}).
 \end{abstract}
 
@@ -153,8 +153,9 @@ TokenDrop produces sparse but semantically anchored keyframe patches;
 (2)~a MotionEncoder $f_\theta$ compresses each short window into one motion
 token (decoder discarded after pre-training); (3)~the fixed-budget memory
 $\mathbf{M}_t$ plugs into the $\pi_{0.5}$ backbone via the same MaC / MaM /
-MaE interfaces as MME-VLA~\citep{dai2026robomme}, enabling apples-to-apples
-comparison against content-blind baselines at matched budgets.
+MaE interfaces as MME-VLA~\citep{dai2026robomme}, enabling a controlled
+memory-content comparison against content-blind baselines under identical
+backbone and evaluation conditions.
 
 \paragraph{Contributions.}
 The main contributions of MotionVLA are:
@@ -168,8 +169,8 @@ The main contributions of MotionVLA are:
           to bridge consecutive observations.
     \item A controlled evaluation on RoboMME~\citep{dai2026robomme}:
           our memory plugs into the MaC / MaM / MaE interfaces of
-          MME-VLA on $\pi_{0.5}$, enabling matched-budget comparison
-          against content-blind baselines (\emph{evaluation in progress}).
+          MME-VLA on $\pi_{0.5}$, enabling a controlled memory-content comparison
+          against content-blind baselines under identical integration conditions (\emph{evaluation in progress}).
 \end{itemize}
 
 
