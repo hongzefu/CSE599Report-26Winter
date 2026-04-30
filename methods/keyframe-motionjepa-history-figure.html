@@ -48,7 +48,7 @@ body{
   .canvas{transform-origin:top left;transform:scale(.94)}
 }
 
-.arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
+.arrows{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
 .block{position:absolute;z-index:2}
 
 /* ---------- module box ---------- */
@@ -531,6 +531,7 @@ function patchGridSVG(opts){
       const isMt = mtEdges.has(t);
       const f = document.createElement('div');
       f.className = 'frame ' + (isKf ? 'kf' : isMt ? 'mt' : 'inter');
+      f.dataset.t = t;
       f.innerHTML = frameSVG(t);
       f.title = `t=${t}`;
       row.appendChild(f);
@@ -708,8 +709,32 @@ function tokenGroupSVG(ev){
      History:     x:740..1216 y:128..450
      Policy:      x:740..1216 y:468..530
 ================================================================= */
-(function drawArrows(){
+function drawArrows(){
   const svg = document.getElementById('arrows');
+  const toSvgPoint = (el, anchor = 'center') => {
+    const box = el.getBoundingClientRect();
+    const svgBox = svg.getBoundingClientRect();
+    const xRatio = 1216 / svgBox.width;
+    const yRatio = 720 / svgBox.height;
+    const x = anchor === 'right' ? box.right
+            : anchor === 'left'  ? box.left
+            : box.left + box.width / 2;
+    const y = anchor === 'bottom' ? box.bottom
+            : anchor === 'top'    ? box.top
+            : box.top + box.height / 2;
+    return {
+      x: (x - svgBox.left) * xRatio,
+      y: (y - svgBox.top) * yRatio,
+    };
+  };
+  const framePoint = t => toSvgPoint(document.querySelector(`.input-strip .frame[data-t="${t}"]`), 'bottom');
+  const framePairTop = toSvgPoint(document.getElementById('pairAnchor').closest('.block'), 'top');
+  const f24 = framePoint(24);
+  const f32 = framePoint(32);
+  const pairEntryY = framePairTop.y - 12;
+  const inputGapY = 190;
+  const frame24EntryX = framePairTop.x - 30;
+  const frame32EntryX = framePairTop.x + 30;
   const defs = `
     <defs>
       <marker id="ah-ink" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
@@ -730,8 +755,9 @@ function tokenGroupSVG(ev){
   const arrows = [
     // Input → CLIP (drop down at CLIP horizontal center)
     { d:`M 130 180 V 204`, stroke:'#4a3f35', m:'ah-ink', w:1.4 },
-    // Input → Frame pair (dashed) — route through CLIP/TokenDrop empty corridor x=273
-    { d:`M 273 180 V 424 H 100 V 436`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
+    // History frames 24/32 → Frame pair (dashed)
+    { d:`M ${f24.x.toFixed(1)} ${f24.y.toFixed(1)} V ${inputGapY} H 268 V ${pairEntryY.toFixed(1)} H ${frame24EntryX.toFixed(1)} V ${framePairTop.y.toFixed(1)}`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
+    { d:`M ${f32.x.toFixed(1)} ${f32.y.toFixed(1)} V ${inputGapY} H 278 V ${pairEntryY.toFixed(1)} H ${frame32EntryX.toFixed(1)} V ${framePairTop.y.toFixed(1)}`, stroke:'#4a3f35', m:'ah-ink', w:1.3, dash:'5 4', op:.5 },
 
     // KF branch horizontal
     { d:`M 260 308 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
@@ -768,7 +794,9 @@ function tokenGroupSVG(ev){
   });
 
   svg.innerHTML = body;
-})();
+}
+drawArrows();
+window.addEventListener('resize', drawArrows);
 </script>
 </body>
 </html>
