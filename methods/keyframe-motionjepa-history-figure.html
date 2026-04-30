@@ -173,7 +173,7 @@ body{
 .pair-single .pframe svg{display:block;width:100%;height:100%}
 .pair-single .pa{font-size:18px;color:var(--motion);line-height:1;opacity:.7}
 .pair-tag{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--motion);
-  letter-spacing:.04em;font-weight:600;margin-top:auto}
+  letter-spacing:.04em;font-weight:600;}
 
 /* ---------- SigLIP ---------- */
 .siglip-stack{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center}
@@ -273,7 +273,7 @@ body{
 /* ---------- Token sequence (history redesign) ---------- */
 .tok-sequence{display:flex;flex-direction:column;gap:5px;width:100%;flex:1;min-height:0}
 .tok-group{display:flex;align-items:center;gap:6px}
-.tg-label{width:68px;flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.tg-label{width:130px;flex-shrink:0;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 .tg-name{font-family:'Fraunces',serif;font-style:italic;font-weight:600;font-size:12px;line-height:1}
 .tg-name.kf{color:var(--accent)}
 .tg-name.mt{color:var(--motion)}
@@ -347,7 +347,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
 
     <!-- ============ MT branch (bottom-half) ============ -->
     <!-- Frame pair (single) -->
-    <div class="block" style="left:0;top:436px;width:180px;height:160px">
+    <div class="block" style="left:0;top:436px;width:180px;height:120px">
       <div class="mod motion">
         <span class="mod-name">Frame pair</span>
         <div class="pair-single">
@@ -360,7 +360,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- Frozen SigLIP -->
-    <div class="block" style="left:230px;top:436px;width:150px;height:160px">
+    <div class="block" style="left:230px;top:436px;width:150px;height:120px">
       <div class="sam-box siglip-box">
         <div class="sam-badge-corner">frozen</div>
         <div class="sam-box-name">SigLip</div>
@@ -368,7 +368,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- MotionEncoder -->
-    <div class="block" style="left:480px;top:436px;width:200px;height:160px">
+    <div class="block" style="left:480px;top:436px;width:200px;height:120px">
       <div class="sam-box motion-box">
         <div class="sam-box-name">MotionEncoder</div>
       </div>
@@ -666,7 +666,7 @@ function tokenGroupSVG(ev){
 (function buildTokenGroups(){
   const container = document.getElementById('tokSequence');
   events.forEach(ev => {
-    const name = ev.type==='mt' ? `MT@${ev.t}` : `KF@${ev.t}`;
+    const name = ev.type==='mt' ? `MotionToken@t=${ev.t}` : `Keyframe@t=${ev.t}`;
     const S=6, G=1, C=S+G;
     let rows;
     if(ev.type==='mt') rows=1;
@@ -737,13 +737,13 @@ function tokenGroupSVG(ev){
     { d:`M 260 308 H 286`, stroke:'#d85400', m:'ah-acc', w:1.6 },
 
     // MT branch horizontal
-    { d:`M 180 516 H 230`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
-    { d:`M 380 516 H 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 180 496 H 230`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 380 496 H 480`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // TokenDrop (KF stream) → History (right column, KF row mid-y)
     { d:`M 706 308 H 740`, stroke:'#d85400', m:'ah-acc', w:1.6 },
     // MotionEncoder (MT stream) → History (right column, MT row mid-y)
-    { d:`M 680 516 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
+    { d:`M 680 496 H 740`, stroke:'#2f6fd6', m:'ah-mot', w:1.6 },
 
     // History → Downstream policy (vertical, inside right column)
     { d:`M 978 624 V 656`, stroke:'#5b3f80', m:'ah-pol', w:1.6 },
@@ -758,8 +758,8 @@ function tokenGroupSVG(ev){
 
   // Size labels above MT-branch arrows
   const szLabels = [
-    { x:430, y:507, text:'(256, 1152) × 2', fill:'#2f6fd6' },
-    { x:710, y:507, text:'(1, D_m)',         fill:'#2f6fd6' },
+    { x:430, y:487, text:'(256, 1152) × 2', fill:'#2f6fd6' },
+    { x:710, y:487, text:'(1, D_m)',         fill:'#2f6fd6' },
   ];
   szLabels.forEach(l => {
     body += `<text x="${l.x}" y="${l.y}" text-anchor="middle"
