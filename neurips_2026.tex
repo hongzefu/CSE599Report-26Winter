@@ -123,7 +123,7 @@ dominate motion-centric and time-sensitive tasks, but its concrete
 instantiations --- uniform frame sampling and temporal-saliency-agnostic
 token dropping --- are content-blind and degrade sharply as the memory
 budget tightens, while symbolic / language-subgoal memory cannot adequately
-represent low-level continuous motion. We introduce a robot-specialized
+represent low-level continuous motion. We introduce \textbf{MotionVLA}, a robot-specialized
 perceptual memory that decouples \emph{what} the robot saw from \emph{how}
 things moved between observations: a CLIP-derivative keyframe selector with
 delta-based per-keyframe TokenDrop carries sparse spatial evidence at
@@ -168,11 +168,12 @@ Robot videos have complementary structure: a few moments that genuinely
 matter (contact events, viewpoint shifts) and predictable motion in between.
 The right memory should mirror that: semantic keyframes for \emph{what was
 seen and when}, and a compact learned summary for \emph{how things moved}.
+MotionVLA addresses this gap with two complementary components.
 We train a MotionEncoder to predict future SigLIP latents in latent
 space, following~\citet{assran2023ijepa}, forcing each motion token to
 encode exactly what content-blind subsampling discards.
 
-Concretely: (1)~a CLIP-derivative keyframe detector plus delta-based
+Concretely, MotionVLA consists of: (1)~a CLIP-derivative keyframe detector plus delta-based
 TokenDrop produces sparse but semantically anchored keyframe patches;
 (2)~a MotionEncoder $f_\theta$ compresses each short window into one motion
 token (decoder discarded after pre-training); (3)~the fixed-budget memory
@@ -181,6 +182,7 @@ MaE interfaces as MME-VLA~\citep{dai2026robomme}, enabling apples-to-apples
 comparison against content-blind baselines at matched budgets.
 
 \paragraph{Contributions.}
+The main contributions of MotionVLA are:
 \begin{itemize}
     \item A perceptual memory that couples CLIP-scored keyframes with
           delta-based TokenDrop and a learned MotionEncoder, decoupling
@@ -232,7 +234,8 @@ a single fixed-budget representation.
 
 \section{Method}
 \label{sec:method}
-% TODO: one short paragraph summarizing what the method does and giving a roadmap of this section.
+
+MotionVLA is a memory-augmented VLA policy that decouples \emph{keyframe tokens} from \emph{motion tokens} within a fixed budget. The following subsections describe its architecture (Sec.~\ref{sec:arch}), memory generation (Sec.~\ref{sec:memory}), and training (Sec.~\ref{sec:objective}).
 
 % \subsection{Preliminaries and Problem Setup}
 % \label{sec:prelim}
@@ -241,7 +244,7 @@ a single fixed-budget representation.
 \subsection{Model Architecture}
 \label{sec:arch}
 
-Our policy is a memory-augmented vision-language-action (VLA) model built on
+MotionVLA is a memory-augmented vision-language-action (VLA) model built on
 top of the $\pi_{0.5}$ backbone. We initialize from the pre-trained backbone
 and fine-tune its experts end-to-end in Stage~2 (Sec.~\ref{sec:objective}).
 The only components kept frozen throughout both stages are the SigLIP2 visual
@@ -411,7 +414,7 @@ Since $m_t$ requires both endpoints of window $[t,\,t\!+\!\Delta]$, it becomes
 causally available only at step $t\!+\!\Delta$.
 
 \paragraph{Memory sequence assembly.}
-The final memory for an episode is the time-ordered concatenation
+MotionVLA assembles the final memory for an episode as the time-ordered concatenation
 \begin{equation}
   \mathcal{M} \;=\; \big[\, x_{k_0}^{\mathrm{full}},\; m_{0},\; m_{\Delta},\; \dots,\; x_{k_i}^{\mathrm{TD}},\; \dots \,\big],
 \end{equation}
@@ -590,7 +593,7 @@ $\Delta\!=\!16$-frame window).
 \section{Experiments}
 \label{sec:exp}
 
-Our evaluation is structured around three research questions.
+Our evaluation of MotionVLA is structured around three research questions.
 \textbf{RQ1 (memory content).} Under a fixed token budget and a fixed
 integration mechanism, do content-aware perceptual memories (CLIP keyframes,
 TokenDrop, learned motion tokens) preserve more decision-relevant signal
@@ -652,7 +655,7 @@ so differences are attributable to memory \emph{content}:
         keyframes without compression (${\sim}8000{+}$ tokens; upper bound).
   \item \textbf{MME-VLA Clip-Keyframe + TokenDrop}: adds delta-based patch
         retention, compressing to a fixed budget of $2000$ tokens.
-  \item \textbf{MME-VLA Clip-KF + TokenDrop + Motion (Ours)}: further
+  \item \textbf{MotionVLA (Ours) --- Clip-KF + TokenDrop + Motion}: further
         appends $125$ motion tokens, yielding $2000{+}125$ total.
   \item \textbf{MME-VLA Even Frame Sampling (EFS)}: uniformly spaced
         frames with pooled tokens, swept over $B\!\in\!\{1024,512,256,128,64\}$.
@@ -677,7 +680,7 @@ so differences are attributable to memory \emph{content}:
     \toprule
     Method & Integration & Memory Budget & Success Rate (\%) \\
     \midrule
-    \textbf{MME-VLA Clip-Keyframe + TokenDrop + Motion (Ours)} & Modulation & $2000{+}125$ & \textit{ongoing} \\
+    \textbf{MotionVLA (Ours): Clip-KF + TokenDrop + Motion} & Modulation & $2000{+}125$ & \textit{ongoing} \\
     MME-VLA Clip-Keyframe                                      & Modulation & $8000{+}$    & \textit{ongoing} \\
     MME-VLA Clip-Keyframe + TokenDrop                          & Modulation & $2000$       & \textit{ongoing} \\
     \midrule
@@ -735,7 +738,7 @@ reported once the \textit{ongoing} runs finish.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We proposed a robot-specialized perceptual memory (Sec.~\ref{sec:method})
+We proposed MotionVLA (Sec.~\ref{sec:method}), a robot-specialized perceptual memory
 that decouples semantic keyframes from learned short-range motion
 summaries within a fixed token budget, exposed to the $\pi_{0.5}$
 backbone through three interchangeable interfaces (MaC / MaM / MaE).
@@ -751,7 +754,7 @@ regime our content-aware design targets.
 Quantitative evaluation is incomplete at submission; the keyframe-based
 configurations, integration-mechanism comparison (RQ3), and cross-backbone
 study are still running, with full results to appear in the camera-ready
-version. Future directions include (i)~online keyframe reassignment as
+version. Future directions for MotionVLA include (i)~online keyframe reassignment as
 episodes evolve; (ii)~hybrid perceptual-plus-language memories combining
 our tokens with VLM-driven subgoal representations; and (iii)~validation
 on real hardware where sensor noise will further stress the keyframe
