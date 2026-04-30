@@ -615,11 +615,13 @@ elapsed before the current step contribute to $\mathbf{M}_t$.
 \label{sec:main-results}
 
 This subsection collects the results currently available against the
-memory-content question (RQ1) and the budget-sensitivity question (RQ2).
+memory-content question (RQ1), the budget-sensitivity question (RQ2),
+and the integration-mechanism question (RQ3).
 The completed runs cover the two content-blind perceptual baselines
 (\emph{Even Frame Sampling} and \emph{Even TokenDropping}) across the
-full budget sweep $B\!\in\!\{1024,512,256,128,64\}$ under MaM; the
-keyframe-based configurations and the cross-backbone study are still
+full budget sweep $B\!\in\!\{1024,512,256,128,64\}$ under MaM (RQ2),
+and across all three integration mechanisms at $B\!=\!512$ (RQ3 partial);
+the keyframe-based configurations and the cross-backbone study are still
 running and appear as \emph{ongoing} entries in Tab.~\ref{tab:main}.
 
 \paragraph{Baselines.}
@@ -694,6 +696,14 @@ while ETD collapses sharply between $B\!=\!128$ and $B\!=\!64$
 crosses a representational threshold at tight budgets.
 Whether content-aware selection closes this gap is the central
 remaining question; those rows are still running.
+
+\paragraph{Integration mechanism interacts with memory content.}
+At $B\!=\!512$, EFS is highly sensitive to integration: Modulation ($44.51$\,\%) leads
+Expert ($36.25$\,\%) by $8.26$\,pt and Context ($30.68$\,\%) by $13.83$\,pt, as dense
+full-frame tokens crowd out current-observation tokens in MaC.
+ETD is far more robust across mechanisms (span: $3.52$\,pt), and notably the
+EFS-vs-ETD ranking \emph{reverses} under Context: EFS lags ETD by $3.82$\,pt, whereas
+under Modulation it leads by $6.49$\,pt.
 
 \subsection{Ablation Studies}
 \label{sec:ablation}
