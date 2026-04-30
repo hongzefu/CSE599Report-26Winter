@@ -63,7 +63,7 @@
 \usepackage{graphicx}       % \includegraphics
 
 % Note. For the workshop paper template, both \title{} and \workshoptitle{} are required, with the former indicating the paper title shown in the title and the latter indicating the workshop title displayed in the footnote. 
-\title{[CSE599 report -- ]}
+\title{MotionVLA: Keyframe-and-Motion Memory for Long-Horizon Vision-Language-Action Policies}
 
 
 % The \author macro works with any number of authors. There are two commands
@@ -128,8 +128,8 @@ perceptual memory that decouples \emph{what} the robot saw from \emph{how}
 things moved between observations: a CLIP-derivative keyframe selector with
 delta-based per-keyframe TokenDrop carries sparse spatial evidence at
 semantic transitions, and a learned MotionEncoder, pretrained on unlabeled
-robot video by JEPA-style~\citep{assran2023ijepa} latent future-token
-prediction, summarizes each short window into a single compact motion
+robot video via latent future-token prediction~\citep{assran2023ijepa},
+summarizes each short window into a single compact motion
 token. The combined sequence is exposed to the $\pi_{0.5}$ backbone
 through a fixed-budget memory interface compatible with all three
 Memory-as-Context, -Modulator, and -Expert integration mechanisms used in
@@ -168,9 +168,9 @@ Robot videos have complementary structure: a few moments that genuinely
 matter (contact events, viewpoint shifts) and predictable motion in between.
 The right memory should mirror that: semantic keyframes for \emph{what was
 seen and when}, and a compact learned summary for \emph{how things moved}.
-We train a MotionEncoder JEPA-style~\citep{assran2023ijepa} to predict
-future SigLIP latents, forcing each motion token to encode exactly what
-content-blind subsampling discards.
+We train a MotionEncoder to predict future SigLIP latents in latent
+space, following~\citet{assran2023ijepa}, forcing each motion token to
+encode exactly what content-blind subsampling discards.
 
 Concretely: (1)~a CLIP-derivative keyframe detector plus delta-based
 TokenDrop produces sparse but semantically anchored keyframe patches;
@@ -185,7 +185,7 @@ comparison against content-blind baselines at matched budgets.
     \item A perceptual memory that couples CLIP-scored keyframes with
           delta-based TokenDrop and a learned MotionEncoder, decoupling
           spatial evidence from motion summaries in a fixed token budget.
-    \item A JEPA-style latent prediction objective~\citep{assran2023ijepa}
+    \item A latent prediction objective (following~\citet{assran2023ijepa})
           with an auxiliary MotionDiT decoder (discarded at deployment)
           that forces each motion token to encode the information needed
           to bridge consecutive observations.
@@ -326,7 +326,7 @@ parameters) to memory processing.
     A CLIP encoder selects semantic keyframes from the robot trajectory;
     TokenDrop retains only the changed patches per keyframe.
     A learned MotionEncoder compresses each short frame-pair window into
-    a single motion token via JEPA-style latent prediction.
+    a single motion token via latent future prediction.
     The interleaved keyframe and motion tokens form a fixed-budget memory
     sequence $\mathbf{M}_t$ that conditions the downstream policy to
     predict action $a_t$.}
@@ -387,7 +387,8 @@ $|\mathcal{P}_i|\!\le\!S$ tokens. TokenDrop is also parameter-free.
 \paragraph{Motion tokens.}
 Let $\Phi_{\mathrm{SigLIP}}\!:\!\mathbb{R}^{3\times H\times W}\!\to\!\mathbb{R}^{S\times E}$ ($S\!=\!256$ patches, $E\!=\!1152$) be the frozen SigLIP tokenizer, and let $x_t \!=\! \Phi_{\mathrm{SigLIP}}(I_t)\in\mathbb{R}^{S\times E}$; $\{s_t\}$ denotes the proprioceptive state sequence.
 Independently of keyframe placement, we tile the video with non-overlapping
-windows of fixed stride $\Delta$ (we use $\Delta\!=\!8$). For each window
+windows of fixed stride $\Delta$ (we use $\Delta\!=\!8$). Following the
+latent prediction approach of~\citet{assran2023ijepa}, for each window
 $[t,\, t\!+\!\Delta]$ a trainable \emph{MotionEncoder}
 $f_\theta$ compresses the visual change into $M$ latent tokens
 $m_{t}\!\in\!\mathbb{R}^{M\times D_m}$:
@@ -444,7 +445,8 @@ loss $\mathcal{L}_{\mathrm{FM}}$ that trains the VLA backbone together
 with the integration module.
 
 \paragraph{Latent future-prediction loss for $f_\theta$.}
-We train $f_\theta$ jointly with an auxiliary \emph{MotionDiT} decoder
+Following~\citet{assran2023ijepa}, we train $f_\theta$ in latent space
+jointly with an auxiliary \emph{MotionDiT} decoder
 $g_\phi$ (Fig.~\ref{fig:training}): a conditional-diffusion decoder that regresses the SigLIP
 tokens of the future frame from the current tokens and the motion code.
 Given $(x_t, x_{t+\Delta})$, we sample a diffusion-style timestep
