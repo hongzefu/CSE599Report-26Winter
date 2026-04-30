@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.10/dist/katex.min.js"></script>
 <style>
 :root{
   --bg:#ffffff; --ink:#1a1410; --ink-soft:#4a3f35;
@@ -57,7 +59,7 @@ body{
   background:#fff;border:1.5px solid var(--rule);border-radius:9px;
   padding:11px 14px 12px;
   box-shadow:0 2px 6px -3px rgba(26,20,16,.1);
-  display:flex;flex-direction:column;align-items:center;gap:6px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
   height:100%;
   position:relative;
 }
@@ -198,7 +200,7 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- side input chip (above MotionEncoder) -->
-    <div class="block" style="left:80px;top:178px;width:200px;height:24px;text-align:center">
+    <div class="block" style="left:80px;top:220px;width:200px;height:24px;text-align:center">
       <span class="shape-chip muted">Δrobot state &nbsp;+&nbsp; Δt</span>
     </div>
 
@@ -210,8 +212,17 @@ footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
     </div>
 
     <!-- side input chip (above MotionDiT) -->
-    <div class="block" style="left:936px;top:178px;width:200px;height:24px;text-align:center">
+    <div class="block" style="left:936px;top:220px;width:200px;height:24px;text-align:center">
       <span class="shape-chip muted">Δrobot state &nbsp;+&nbsp; Δt</span>
+    </div>
+
+    <!-- ℒpred KaTeX overlay — placed beside dashed loss arrow -->
+    <div class="block" id="loss-katex-block"
+         style="left:690px;top:355px;width:510px;
+                color:#5b3f80;line-height:1.5;pointer-events:none">
+      <div id="loss-katex-line1" style="font-family:'Fraunces',serif;font-size:12px;
+           font-style:italic;color:#5b3f80;margin-bottom:2px"></div>
+      <div id="loss-katex-line2" style="font-size:13px;"></div>
     </div>
 
   </div>
@@ -320,9 +331,9 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
     { d:`M 896 317 L 680 420`, c:'#5b3f80', m:'ah-loss', w:1.7, dash:'6 4' },
 
     /* (6) side chip → MotionEncoder top                                    */
-    { d:`M 180 202 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
+    { d:`M 180 244 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
     /* (7) side chip → MotionDiT top                                        */
-    { d:`M 1036 202 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
+    { d:`M 1036 244 V 253`, c:'#2f6fd6', m:'ah-mot', w:1.4 },
   ];
 
   let body = defs;
@@ -335,15 +346,15 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
 
   /* ---- arrow labels (horizontal text, kept off-line of every arrow) ---- */
   const labels = [
-    /* arrow 1 — I_t → MotionEncoder. label at far-left, above the diagonal */
-    { x:330, y:166, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
-    { x:330, y:180, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'start' },
+    /* arrow 1 — I_t → MotionEncoder. moved down, clear of I_t bottom */
+    { x:330, y:198, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
+    { x:330, y:212, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'start' },
 
-    /* arrow 2 — I_t → MotionDiT. label at far-right, above the diagonal */
-    { x:886, y:166, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'end' },
-    { x:886, y:180, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'end' },
+    /* arrow 2 — I_t → MotionDiT. moved down symmetrically */
+    { x:886, y:198, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'end' },
+    { x:886, y:212, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'end' },
 
-    /* arrow 3 — I_{t+Δ} → MotionEncoder. label midway between encoder bottom and frame top */
+    /* arrow 3 — I_{t+Δ} → MotionEncoder. between encoder bottom and frame top */
     { x:330, y:348, text:'SigLIP feature', fill:'#3a5a40', sz:10.5, italic:true,  anchor:'start' },
     { x:330, y:362, text:'(256, 1152)',    fill:'#3a5a40', sz:9.5,                 anchor:'start' },
 
@@ -351,13 +362,7 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
     { x:608, y:264, text:'motion_tokens  m_t', fill:'#2f6fd6', sz:11.5, anchor:'middle' },
     { x:608, y:278, text:'(M, D_m)',           fill:'#2f6fd6', sz:9.5,  anchor:'middle' },
 
-    /* arrow 5 — MotionDiT → I_{t+Δ} (loss).  ℒ_pred equation placed to the
-       right of the I_{t+Δ} card, below the dashed arrow so text never crosses
-       the line.                                                               */
-    { x:700, y:494, text:'ℒ_pred  ·  latent future-prediction loss',
-      fill:'#5b3f80', sz:11.5, italic:true, anchor:'start' },
-    { x:700, y:512, text:'= 𝔼_{t,k}  ‖ x̂_{t+Δ}^{(k)} − TokenNorm(x_{t+Δ}) ‖₂²',
-      fill:'#5b3f80', sz:11.5, anchor:'start' },
+    /* arrow 5 — ℒ_pred rendered as KaTeX HTML overlay, not here */
   ];
   labels.forEach(l => {
     body += `<text x="${l.x}" y="${l.y}" text-anchor="${l.anchor||'middle'}"
@@ -367,6 +372,24 @@ document.getElementById('frame-itk').innerHTML = frameSVG(1);
 
   svg.innerHTML = body;
 })();
+
+/* =================================================================
+   KaTeX — render ℒ_pred equation once the library is ready
+================================================================= */
+function renderLoss(){
+  if(typeof katex === 'undefined'){ setTimeout(renderLoss, 50); return; }
+  katex.render(
+    '\\mathcal{L}_{\\text{pred}} \\;\\cdot\\; \\text{latent future-prediction loss}',
+    document.getElementById('loss-katex-line1'),
+    { throwOnError:false, displayMode:false }
+  );
+  katex.render(
+    '= \\mathbb{E}_{t,k}\\,\\bigl\\|\\,\\hat{x}_{t+\\Delta}^{(k)} - \\operatorname{TokenNorm}(x_{t+\\Delta})\\,\\bigr\\|_2^2',
+    document.getElementById('loss-katex-line2'),
+    { throwOnError:false, displayMode:false }
+  );
+}
+renderLoss();
 </script>
 </body>
 </html>
