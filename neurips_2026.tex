@@ -582,7 +582,7 @@ with the integration module.
 
 \paragraph{Latent future-prediction loss for $f_\theta$.}
 We train $f_\theta$ jointly with an auxiliary \emph{MotionDiT} decoder
-$g_\phi$: a conditional-diffusion decoder that regresses the SigLIP
+$g_\phi$ (Fig.~\ref{fig:training}): a conditional-diffusion decoder that regresses the SigLIP
 tokens of the future frame from the current tokens and the motion code.
 Given $(x_t, x_{t+\Delta})$, we sample a diffusion-style timestep
 $k\!\sim\!\mathcal{U}\{1,\dots,K\}$ and ask $g_\phi$ to predict the
@@ -612,6 +612,23 @@ pre-training: at deployment the robot has already executed both endpoints
 of every motion window, so memory tokens are produced by a single forward
 pass through $\Phi_{\mathrm{SigLIP}}$ and $f_\theta$; no decoding is
 performed and $g_\phi$ is discarded.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{image2.png}
+  \caption{%
+    \textbf{MotionEncoder training mechanism.}
+    The MotionEncoder $f_\theta$ and the auxiliary MotionDiT $g_\phi$ are
+    trained jointly via JEPA-style latent prediction.
+    Both modules receive SigLIP features from the current frame $I_t$;
+    $f_\theta$ additionally takes the future frame $I_{t+\Delta}$ and the
+    proprioceptive difference $\Delta s_t$ to produce a compact motion token.
+    $g_\phi$ then predicts the token-normalized future-frame features from
+    the current tokens and the motion token, providing a latent prediction
+    signal that trains $f_\theta$.
+    After pre-training, $g_\phi$ is discarded and $f_\theta$ is frozen.}
+  \label{fig:training}
+\end{figure}
 
 \paragraph{Flow-matching action loss.}
 Following $\pi_{0.5}$, the policy predicts an $H$-step action chunk
