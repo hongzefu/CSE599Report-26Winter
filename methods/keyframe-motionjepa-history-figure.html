@@ -290,6 +290,13 @@ body{
 
 footer{margin-top:14px;font-family:'JetBrains Mono',monospace;font-size:10px;
   letter-spacing:.06em;color:var(--ink-soft);text-align:right}
+
+.h-kf-thumb{
+  width:56px;height:56px;border-radius:5px;overflow:hidden;
+  border:1.5px solid var(--accent);flex:none;margin-left:5px;
+  box-shadow:0 0 0 1.5px rgba(216,84,0,.15);
+}
+.h-kf-thumb svg{display:block;width:100%;height:100%}
 </style>
 </head>
 <body>
@@ -670,12 +677,19 @@ function tokenGroupSVG(ev){
     const brace=`<svg width="${BW}" height="${H}" viewBox="0 0 ${BW} ${H}"><path d="M ${BW},0 C ${BW},${H/4} ${d},${H/4} ${d},${H/2} C ${d},${3*H/4} ${BW},${3*H/4} ${BW},${H}" fill="none" stroke="#4a3f35" stroke-width="1.5" stroke-linecap="round"/></svg>`;
     const group = document.createElement('div');
     group.className = `tok-group ${ev.type}`;
+    const thumbHTML = ev.type === 'kf'
+      ? `<div class="h-kf-thumb">${
+          ev.render === 'full'
+            ? frameSVG(ev.t)
+            : maskedFrameSVG(ev.t, tdPatchData[ev.t]?.rect)
+        }</div>`
+      : '';
     group.innerHTML = `
       <div class="tg-label">
         <span class="tg-name ${ev.type}">${name}</span>
         <span class="tg-time">t=${ev.t}</span>
       </div>
-      <div class="tg-right">${brace}${tokenGroupSVG(ev)}</div>`;
+      <div class="tg-right">${brace}${tokenGroupSVG(ev)}${thumbHTML}</div>`;
     container.appendChild(group);
   });
 })();
