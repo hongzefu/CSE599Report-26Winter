@@ -656,25 +656,29 @@ so differences are attributable to memory \emph{content}:
     Method & Integration & Memory Budget & Success Rate (\%) \\
     \midrule
     \textbf{MotionVLA: Clip-KF + TokenDrop + Motion} & Modulation & $2000{+}125$ & \textit{ongoing} \\
-    MotionVLA: Clip-KF                                     & Modulation & $8000{+}$    & \textit{ongoing} \\
+    MotionVLA: Clip-KF                                     & Modulation & $5120$    & \textit{ongoing} \\
      MotionVLA: Clip-KF + TokenDrop                          & Modulation & $2000$       & \textit{ongoing} \\
+    MotionVLA: Other Integration (Context, Expert)           & ---        & ---          & \textit{ongoing} \\
     \midrule
-    \multirow{5}{*}{MME-VLA Even Frame Sampling}
+    \multirow{7}{*}{MME-VLA Even Frame Sampling}
         & Modulation & $1024$ & $45.87$ \\
         & Modulation & $512$  & $44.51$ \\
         & Modulation & $256$  & $42.90$ \\
         & Modulation & $128$  & $36.54$ \\
         & Modulation & $64$   & $30.42$ \\
+        & Context    & $512$  & $30.68$ \\
+        & Expert     & $512$  & $36.25$ \\
     \midrule
-    \multirow{5}{*}{MME-VLA Even TokenDropping}
+    \multirow{7}{*}{MME-VLA Even TokenDropping}
         & Modulation & $1024$ & $40.17$ \\
         & Modulation & $512$  & $38.02$ \\
         & Modulation & $256$  & $36.36$ \\
         & Modulation & $128$  & $32.76$ \\
         & Modulation & $64$   & $18.11$ \\
+        & Context    & $512$  & $34.50$ \\
+        & Expert     & $512$  & $34.86$ \\
     \midrule
     Other backbones (OpenVLA, Qwen3.5-VL) & --- & --- & \textit{ongoing} \\
-    Other Intergration (Context, Expert) & --- & --- & \textit{ongoing} \\
     \bottomrule
   \end{tabular}
 \end{table}
