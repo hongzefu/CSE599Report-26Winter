@@ -155,85 +155,44 @@ central design question for memory-augmented manipulation is not
 \emph{whether} to retain history but \emph{which projection of it} fits
 inside that window without losing decision-relevant signal.
 
-Two ends of the design spectrum have been explored, and each is
-unsatisfactory. \emph{Symbolic} memory~\citep{bu2025univla,sridhar2025memer,geminiroboticsTeam2025gemini15}
-discretizes history into language-based subgoals or natural-language plans;
-this is cheap and human-interpretable, but recent controlled
-evaluation~\citep{dai2026robomme} shows that language under-specifies
-continuous motion and the resulting policies struggle on motion-centric
-and precise visuomotor tasks even when given oracle subgoals. \emph{Perceptual}
-memory keeps raw visual tokens~\citep{jang2025contextvla,koo2025hamlet,fang2025sam2act,shi2026memoryvla,physicalintelligence2026mem},
-and is the empirically stronger family on motion-centric and long-horizon
-tasks~\citep{dai2026robomme}; but the two perceptual instantiations
-evaluated head-to-head in that study --- uniform frame sampling and
-temporal-saliency-agnostic token dropping --- are content-blind. A uniform
-sampler treats a critical contact event identically to a static-table
-frame, and patch-level dropping that ignores temporal saliency removes the
-global layout that timing- and counting-style tasks need. Both perceptual
-variants degrade steeply as the memory budget shrinks, leaving open the
-question of whether the perceptual family is structurally limited or only
-its existing representatives are.
+Existing memory designs fall into two families, each with limitations.
+\emph{Symbolic} memory~\citep{bu2025univla,sridhar2025memer,geminiroboticsTeam2025gemini15}
+discretizes history into language subgoals; controlled evaluation~\citep{dai2026robomme}
+shows it under-specifies continuous motion. \emph{Perceptual} memory retains
+raw visual tokens~\citep{jang2025contextvla,koo2025hamlet,fang2025sam2act,shi2026memoryvla,physicalintelligence2026mem}
+and is empirically stronger, but the two perceptual instantiations in that study
+--- uniform frame sampling and saliency-agnostic token dropping --- are
+content-blind and degrade steeply as the memory budget shrinks.
 
-Robot videos have two complementary kinds of structure: a small number of
-moments that genuinely matter (object pickup, contact, release, viewpoint
-shift), and the relatively predictable motion that fills the gaps between
-them. We argue the right perceptual memory should mirror that structure:
-keep semantically chosen keyframes for \emph{what was seen and when}, and
-learn a compact summary for \emph{how things moved between frames}. Our
-motion summary is trained, JEPA-style~\citep{assran2023ijepa}, to predict
-the latent SigLIP tokens of a future frame from those of the current frame
-and a learnable motion code, so a single motion token is forced to encode
-exactly the bridge information that any uniform-subsampling scheme throws
-away.
+Robot videos have complementary structure: a few moments that genuinely
+matter (contact events, viewpoint shifts) and predictable motion in between.
+The right memory should mirror that: semantic keyframes for \emph{what was
+seen and when}, and a compact learned summary for \emph{how things moved}.
+We train a MotionEncoder JEPA-style~\citep{assran2023ijepa} to predict
+future SigLIP latents, forcing each motion token to encode exactly what
+content-blind subsampling discards.
 
-We instantiate this idea in three pieces. First, a deterministic
-CLIP-derivative keyframe detector selects frames at semantic transitions;
-a delta-based per-keyframe TokenDrop then keeps only patches that changed
-relative to the previous keyframe, plus their bounding rectangle for
-spatial contiguity. Second, a small causal-transformer MotionEncoder
-$f_\theta$ runs over fixed-stride short windows and emits one motion token
-per window; it is pretrained on unlabeled robot video together with an
-auxiliary MotionDiT decoder that regresses future SigLIP tokens, and the
-decoder is discarded at deployment. Third, the resulting time-tagged
-sequence is exposed as a fixed-budget memory state $\mathbf M_t$ through
-the same Memory-as-Context, Memory-as-Modulator, and Memory-as-Expert
-interfaces used by the MME-VLA suite of \citet{dai2026robomme} on the
-$\pi_{0.5}$ backbone. The memory pipeline is task-agnostic and trained
-once; only the VLA fine-tunes per task. Replacing the perceptual memory
-module with our keyframe-plus-motion design is therefore a drop-in change
-at every comparison point, so any observed effect is attributable to
-memory \emph{content}, not \emph{injection}.
-
-We evaluate this design on RoboMME~\citep{dai2026robomme} --- a long-horizon,
-history-dependent benchmark spanning temporal, spatial, object, and
-procedural memory tasks --- against uniform-frame-sampling and naive
-token-drop perceptual baselines at matched memory budgets, under all
-three integration mechanisms. Our hypothesis is that content-aware
-keyframes plus a learned motion summary preserve more decision-relevant
-signal per token than information-blind subsampling, particularly on
-motion-centric and long-horizon tasks where symbolic memory cannot
-represent continuous motion. Whether this hypothesis holds across budgets
-and integration choices is the subject of Sec.~\ref{sec:exp}, where the
-full quantitative evaluation is currently \emph{in progress}.
+Concretely: (1)~a CLIP-derivative keyframe detector plus delta-based
+TokenDrop produces sparse but semantically anchored keyframe patches;
+(2)~a MotionEncoder $f_\theta$ compresses each short window into one motion
+token (decoder discarded after pre-training); (3)~the fixed-budget memory
+$\mathbf{M}_t$ plugs into the $\pi_{0.5}$ backbone via the same MaC / MaM /
+MaE interfaces as MME-VLA~\citep{dai2026robomme}, enabling apples-to-apples
+comparison against content-blind baselines at matched budgets.
 
 \paragraph{Contributions.}
 \begin{itemize}
-    \item A robot-specialized perceptual memory that combines CLIP-scored
-          semantic keyframes with delta-based TokenDrop and a learned
-          MotionEncoder, decoupling sparse spatial evidence from compact
-          short-range motion summaries inside a fixed token budget.
-    \item A JEPA-style~\citep{assran2023ijepa} latent future-token-prediction
-          objective with an auxiliary MotionDiT decoder that is discarded at
-          deployment, used to pretrain the MotionEncoder on unlabeled robot
-          video so each motion token is forced to encode exactly the
-          information needed to bridge consecutive observations.
-    \item A controlled evaluation protocol on
-          RoboMME~\citep{dai2026robomme}: our memory plugs into the existing
-          MME-VLA Memory-as-Context, -Modulator, and -Expert interfaces on
-          the $\pi_{0.5}$ backbone, enabling apples-to-apples comparison
-          against uniform-frame-sampling and naive token-drop baselines at
-          matched memory budgets (full quantitative results: \emph{evaluation
-          in progress}).
+    \item A perceptual memory that couples CLIP-scored keyframes with
+          delta-based TokenDrop and a learned MotionEncoder, decoupling
+          spatial evidence from motion summaries in a fixed token budget.
+    \item A JEPA-style latent prediction objective~\citep{assran2023ijepa}
+          with an auxiliary MotionDiT decoder (discarded at deployment)
+          that forces each motion token to encode the information needed
+          to bridge consecutive observations.
+    \item A controlled evaluation on RoboMME~\citep{dai2026robomme}:
+          our memory plugs into the MaC / MaM / MaE interfaces of
+          MME-VLA on $\pi_{0.5}$, enabling matched-budget comparison
+          against content-blind baselines (\emph{evaluation in progress}).
 \end{itemize}
 
 
@@ -241,74 +200,34 @@ full quantitative evaluation is currently \emph{in progress}.
 \label{sec:related}
 
 \paragraph{Memory-based Robotic Manipulation Models.}
-History-dependent manipulation has motivated a rapidly growing family of
-memory designs for VLA policies, but the design space remains fragmented.
-The most direct treatment is to feed history in as additional context:
-ContextVLA~\citep{jang2025contextvla} concatenates a sliding window of past
-visual tokens to the transformer input, while
-BC-RNN~\citep{mandlekar2021bcrnn} rolls history through a recurrent state.
-Both extremes scale poorly --- the former pays linear attention cost in
-horizon length, the latter compresses without selection. Recent state-space
-policies, including RoboMamba~\citep{liu2024robomamba} and
-MITL~\citep{mitl2025}, replace the RNN with Mamba-style
-updates~\citep{gu2024mamba}, preserving constant-memory recurrence while
-extending the effective context window.
-
-A second line of work inserts an explicit \emph{memory bank} between the
-encoder and the policy and reads from it on demand.
-Hamlet~\citep{koo2025hamlet} and MemoryVLA~\citep{shi2026memoryvla} cache
-past visual features together with auxiliary signals such as task
-instructions or cognitive summaries, and retrieve the relevant entries at
-each step; SAM2Act~\citep{fang2025sam2act} attaches a similar memory module
-to a video segmentation backbone so that object identity and action heatmaps
-remain stable across long horizons. MEM~\citep{physicalintelligence2026mem}
-pushes this further by organizing embodied features at multiple temporal
-resolutions, while BPP~\citep{sobol2026bpp} recasts long-context imitation
-learning as the problem of selecting a small set of behaviorally relevant key
-history frames. HistRISE~\citep{chen2025histrise} takes the structured-state
-view to its extreme, tracking object-centric 3D points as a
-non-differentiable symbolic memory.
-
-A third, increasingly popular direction offloads memory entirely to a large
-vision-language model. UniVLA~\citep{bu2025univla} simply prepends past
-actions to the prompt, while MemER~\citep{sridhar2025memer},
-Gemini-Robotics-1.5~\citep{geminiroboticsTeam2025gemini15}, and the
-steerable $\pi_{0.7}$ generalist~\citep{physicalintelligence2026pi07} rely
-on a VLM to produce language-based subgoals or natural-language plans that
-condition a downstream policy. This keeps the policy itself short-context,
-but introduces costly modular inference and breaks end-to-end optimization.
-Taken together, these works establish that memory is essential, yet they
-differ in backbone, in what is stored, and in how memory is integrated,
-making head-to-head comparison difficult --- the gap our controlled study
-targets, by training a family of memory-augmented VLAs on the same backbone
-and evaluating diverse representations and integration mechanisms in a
-unified setting.
+History-dependent manipulation has motivated a diverse family of memory
+designs. Context-based approaches concatenate past visual tokens
+(ContextVLA~\citep{jang2025contextvla}) or compress them recurrently
+(BC-RNN~\citep{mandlekar2021bcrnn}; Mamba-style: RoboMamba~\citep{liu2024robomamba},
+MITL~\citep{mitl2025}), but either pay linear attention cost or compress
+without selection. Explicit memory-bank methods retrieve on demand:
+Hamlet~\citep{koo2025hamlet}, MemoryVLA~\citep{shi2026memoryvla}, and
+SAM2Act~\citep{fang2025sam2act} cache visual or segmentation features;
+MEM~\citep{physicalintelligence2026mem} organizes them at multiple temporal
+resolutions; BPP~\citep{sobol2026bpp} explicitly selects key history frames.
+A third direction offloads memory to a VLM (UniVLA~\citep{bu2025univla},
+MemER~\citep{sridhar2025memer}, Gemini-Robotics-1.5~\citep{geminiroboticsTeam2025gemini15}),
+at the cost of modular inference and broken end-to-end optimization. These
+works differ in backbone, stored representation, and injection mechanism,
+making head-to-head comparison difficult --- the gap our study targets.
 
 \paragraph{Efficient Video Representation for Robotic Manipulation.}
-Episodic robot videos are heavily redundant: adjacent frames differ only
-in a few interaction-relevant pixels, and most patches encode static
-background or the robot's own body. General video understanding addresses
-this with token-level pruning and resampling ---
-TimeChat-Online~\citep{yao2025timechat} shows that roughly 80\% of visual
-tokens are naturally redundant in streaming video, and
-VideoLLM-online~\citep{chen2024videollmonline} streams video into a language
-model under an incremental token budget. In manipulation the constraint is
-tighter still: a policy must run at control rate while keeping many seconds
-of history within a fixed token window. Robotic methods therefore aggregate
-frames at the encoder side --- ContextVLA~\citep{jang2025contextvla}
-amortizes multi-frame context into a compact history bundle,
-Hamlet~\citep{koo2025hamlet} turns a vanilla VLA into a history-aware policy
-by switching its inputs at inference time, and long-context diffusion
-policies~\citep{torne2025longcontext} supervise past-token prediction so that
-the compressed history retains causally relevant information. A complementary
-thread asks \emph{which} frames matter:
-BPP~\citep{sobol2026bpp} explicitly selects key history frames for imitation
-learning, and SAM2Act~\citep{fang2025sam2act} reuses a video segmentation
-foundation model to anchor object identity across long horizons. We build on
-these observations by combining TokenDropped keyframe patches with a
-MotionEncoder summary, decoupling sparse visual evidence from high-frequency
-motion structure and giving every memory variant the same fixed-size video
-representation budget.
+Robot videos are heavily redundant, yet policies must retain seconds of
+history at control rate within a fixed token window. Prior work aggregates
+at the encoder side (ContextVLA~\citep{jang2025contextvla},
+Hamlet~\citep{koo2025hamlet}, long-context diffusion~\citep{torne2025longcontext})
+or selects key frames (BPP~\citep{sobol2026bpp}, SAM2Act~\citep{fang2025sam2act}).
+General video methods (TimeChat-Online~\citep{yao2025timechat},
+VideoLLM-online~\citep{chen2024videollmonline}) show that ${\sim}80\%$ of
+tokens are redundant, but manipulation demands tighter budgets still. We
+combine delta-based TokenDrop over semantic keyframes with a MotionEncoder
+summary, decoupling sparse spatial evidence from short-range dynamics within
+a single fixed-budget representation.
 
 
 \section{Method}
@@ -324,7 +243,7 @@ representation budget.
 
 Our policy is a memory-augmented vision-language-action (VLA) model built on
 top of the $\pi_{0.5}$ backbone. We initialize from the pre-trained backbone
-and fine-tune its experts end-to-end in Stage~2 (Sec.~\ref{sec:training}).
+and fine-tune its experts end-to-end in Stage~2 (Sec.~\ref{sec:objective}).
 The only components kept frozen throughout both stages are the SigLIP2 visual
 encoder and, after Stage~1, the MotionEncoder $f_\theta$.
 We inject the per-episode memory sequence assembled in
@@ -691,28 +610,11 @@ all unfinished cells as \emph{ongoing} (Sec.~\ref{sec:main-results}).
 
 \paragraph{Benchmark.}
 We evaluate on RoboMME~\citep{dai2026robomme}, a long-horizon,
-history-dependent manipulation suite that explicitly tests four families of
-memory: \emph{temporal} (event counting and ordering), \emph{spatial}
-(layout and viewpoint persistence), \emph{object} (identity under
-occlusion), and \emph{procedural} (reproducing demonstrated motion).
-RoboMME provides matched train/eval splits, a unified scoring protocol, and
-the MME-VLA reference policies, which makes it the natural testbed for a
-controlled comparison of memory \emph{content} at matched memory budgets.
-
-\paragraph{Baselines and our model.}
-All configurations share the $\pi_{0.5}$ backbone and the
-\emph{Memory-as-Modulation} (MaM) integration mechanism described in
-Sec.~\ref{sec:arch}, so any difference is attributable to memory content.
-The full set of compared methods is enumerated in
-Sec.~\ref{sec:main-results} (\textit{Baselines} paragraph): two
-content-blind baselines (\emph{Even Frame Sampling} and \emph{Even
-TokenDropping}) swept over five token budgets
-$B\!\in\!\{1024,512,256,128,64\}$, two keyframe-based ablations
-(\emph{Clip-Keyframe} as an upper-bound configuration with $\sim\!8000{+}$
-tokens, and \emph{Clip-Keyframe + TokenDrop} at the matched budget of
-$2000$), our full \emph{Clip-Keyframe + TokenDrop + Motion} memory at
-$2000{+}125$, and an additional cross-backbone study with OpenVLA and
-Qwen2.5-VL.
+history-dependent manipulation suite spanning four memory categories
+(temporal, spatial, object, procedural). It provides matched train/eval
+splits, a unified scoring protocol, and the MME-VLA reference policies,
+making it the natural testbed for controlled memory-content comparisons.
+Compared methods are detailed in Sec.~\ref{sec:main-results}.
 
 \paragraph{Metric.}
 Following RoboMME~\citep{dai2026robomme}, we report task Success Rate
@@ -741,35 +643,21 @@ keyframe-based configurations and the cross-backbone study are still
 running and appear as \emph{ongoing} entries in Tab.~\ref{tab:main}.
 
 \paragraph{Baselines.}
-We compare our method against five reference configurations and an
-extra backbone study, all instantiated under the
-\emph{Memory-as-Modulation} (MaM) integration mechanism so that
-differences are attributable to memory \emph{content} rather than
-\emph{injection}:
+All configurations share the $\pi_{0.5}$ backbone and MaM integration,
+so differences are attributable to memory \emph{content}:
 \begin{itemize}
-  \item \textbf{MME-VLA Clip-Keyframe} retains every $16{\times}16$
-        token of the selected keyframes (\S\ref{sec:memory})
-        without compression, giving an upper-bound configuration of
-        $\sim\!8000{+}$ tokens.
-  \item \textbf{MME-VLA Clip-Keyframe + TokenDrop} adds the
-        temporal-saliency token-dropping policy on top, compressing the
-        memory to a fixed budget of $2000$ tokens.
-  \item \textbf{MME-VLA Clip-Keyframe + TokenDrop + Motion (Ours)}
-        further appends $125$ motion tokens that summarise short-range
-        dynamics, yielding a total budget of $2000{+}125$.
-  \item \textbf{MME-VLA Even Frame Sampling} is the naive frame-sampling
-        baseline (\S\ref{sec:memory}, FrameSamp): uniformly
-        spaced frames with pooled tokens, swept over budgets
-        $\{1024, 512, 256, 128, 64\}$ to characterise how purely
-        temporal subsampling degrades with shrinking memory.
-  \item \textbf{MME-VLA Even TokenDropping} is the naive token-dropping
-        baseline that ignores temporal-saliency scoring, swept over the
-        same five budgets to isolate the value of the
-        importance-weighted selection used by our method.
-  \item \textbf{Other backbones (OpenVLA, Qwen2.5-VL)} swap the
-        $\pi_{0.5}$ backbone for two alternative VLA backbones with the
-        same memory pipeline, probing how transferable the proposed
-        memory design is across model families.
+  \item \textbf{MME-VLA Clip-Keyframe}: retains every token of selected
+        keyframes without compression (${\sim}8000{+}$ tokens; upper bound).
+  \item \textbf{MME-VLA Clip-Keyframe + TokenDrop}: adds delta-based patch
+        retention, compressing to a fixed budget of $2000$ tokens.
+  \item \textbf{MME-VLA Clip-KF + TokenDrop + Motion (Ours)}: further
+        appends $125$ motion tokens, yielding $2000{+}125$ total.
+  \item \textbf{MME-VLA Even Frame Sampling (EFS)}: uniformly spaced
+        frames with pooled tokens, swept over $B\!\in\!\{1024,512,256,128,64\}$.
+  \item \textbf{MME-VLA Even TokenDropping (ETD)}: saliency-agnostic patch
+        dropping, swept over the same five budgets.
+  \item \textbf{Alternative backbones} (OpenVLA, Qwen2.5-VL): same memory
+        pipeline on different VLA families, probing transferability.
 \end{itemize}
 
 \begin{table}[t]
@@ -811,128 +699,61 @@ differences are attributable to memory \emph{content} rather than
 \end{table}
 
 \paragraph{Findings on the content-blind baselines.}
-Two observations follow directly from the completed runs in
-Tab.~\ref{tab:main}.
-\emph{(i) Frame sampling consistently dominates token dropping at matched
-budget.} At every budget $B$, \emph{Even Frame Sampling} outperforms
-\emph{Even TokenDropping}: the gap is $+5.7$ pt at $B\!=\!1024$ and widens
-to $+12.3$ pt at $B\!=\!64$. Keeping a few full frames is therefore a
-strictly stronger memory than retaining the same number of arbitrarily
-selected patches, even when the patch budget is comparatively generous.
-\emph{(ii) The two baselines degrade differently as the budget shrinks.}
-\emph{Even Frame Sampling} loses $15.45$ pt across the full sweep
-($45.87\!\to\!30.42$), with monotone but accelerating per-halving drops
-($1.36$, $1.61$, $6.36$, $6.12$ pt);
-\emph{Even TokenDropping} loses $22.06$ pt across the same sweep
-($40.17\!\to\!18.11$), and exhibits a clear cliff between $B\!=\!128$ and
-$B\!=\!64$ ($32.76\!\to\!18.11$, a $14.65$ pt single-step drop).
-This asymmetry is consistent with our motivation
-(Sec.~\ref{sec:intro}): saliency-agnostic patch removal eventually deletes
-patches that anchor global layout, after which the policy cannot
-reconstruct the scene from what remains, while uniform frame subsampling
-loses temporal resolution more gracefully because each retained frame still
-carries a complete spatial layout. Whether content-aware selection (CLIP
-keyframes, TokenDrop, motion tokens) closes this gap and surpasses
-\emph{Even Frame Sampling} at matched budgets is the central remaining
-question; those rows are still running and will replace the
-\emph{ongoing} cells in Tab.~\ref{tab:main}.
+Two observations follow from Tab.~\ref{tab:main}.
+\emph{(i)} EFS outperforms ETD at every budget ($+5.7$ pt at $B\!=\!1024$,
+widening to $+12.3$ pt at $B\!=\!64$): full frames carry more usable signal
+than the same number of arbitrarily selected patches.
+\emph{(ii)} EFS degrades gradually ($15.45$ pt over the full sweep),
+while ETD collapses sharply between $B\!=\!128$ and $B\!=\!64$
+($14.65$ pt single-step drop), suggesting content-blind patch removal
+crosses a representational threshold at tight budgets.
+Whether content-aware selection closes this gap is the central
+remaining question; those rows are still running.
 
 \subsection{Ablation Studies}
 \label{sec:ablation}
 
-A full ablation matrix over the components of our memory pipeline and the
-three integration mechanisms is currently in progress, sharing the same
-backbone, optimizer, and budget conventions as Sec.~\ref{sec:main-results}.
-The planned ablation axes are:
-(i) keyframe selection (CLIP-derivative vs.\ uniform) at matched budget;
-(ii) per-keyframe TokenDrop on/off, isolating the contribution of
-delta-based patch retention beyond keyframe selection;
-(iii) MotionEncoder tokens on/off, isolating the contribution of the
-JEPA-style learned motion summary;
-(iv) integration mechanism, swapping MaM for Memory-as-Context and
-Memory-as-Expert on the same memory tokens, addressing RQ3; and
-(v) backbone, swapping $\pi_{0.5}$ for OpenVLA and Qwen2.5-VL with the
-memory pipeline held fixed, probing transferability.
-We do not report partial ablation numbers here to avoid over-interpreting
-unfinished sweeps.
+A full ablation over (i)~keyframe selection (CLIP vs.\ uniform),
+(ii)~TokenDrop on/off, (iii)~motion tokens on/off,
+(iv)~integration mechanism (MaC/MaM/MaE), and (v)~backbone
+(OpenVLA, Qwen2.5-VL) is currently running; results will replace the
+\textit{ongoing} cells in Tab.~\ref{tab:main}.
 
 \subsection{Analysis}
 \label{sec:analysis}
 
-\paragraph{Two qualitatively different degradation modes.}
-Reading the completed entries of Tab.~\ref{tab:main} as two budget-success
-curves makes the structural difference between the baselines explicit.
-\emph{Even Frame Sampling} stays nearly flat over the looser half of the
-sweep ($1.36$ and $1.61$ pt drops at $1024\!\to\!512$ and $512\!\to\!256$)
-before transitioning into a steeper but still bounded regime in the tighter
-half ($6.36$ and $6.12$ pt at $256\!\to\!128$ and $128\!\to\!64$).
-\emph{Even TokenDropping} starts $5.7$ pt below at the loosest budget,
-tracks comparable per-halving losses through $B\!=\!256$ ($2.15$, $1.66$,
-and $3.60$ pt), and then collapses by $14.65$ pt between $B\!=\!128$ and
-$B\!=\!64$. We read the cliff as evidence that content-blind patch removal
-crosses a representational threshold: below this budget the surviving
-patches no longer anchor enough global structure for the action expert to
-recover the scene, whereas frame-level subsampling continues to deliver
-intact-but-coarser temporal slices. From a memory-design perspective, this
-is the empirical signature that motivates content-aware selection ---
-deciding \emph{which} patches to keep is most consequential exactly where
-the budget is tightest, which is also where motion-centric and
-counting-style RoboMME tasks place their hardest queries.
-
-\paragraph{Caveats.}
-The analysis above is restricted to the two completed sweeps; we do not
-extrapolate to the keyframe-based or cross-backbone configurations whose
-runs are still in progress. We will revisit the per-task breakdown
-(temporal / spatial / object / procedural) and report failure cases in the
-final version, once the \emph{ongoing} cells of Tab.~\ref{tab:main} are
-filled in.
+These findings are consistent with our motivation in Sec.~\ref{sec:intro}:
+content-blind patch removal crosses a representational threshold at tight
+budgets, while frame-level subsampling degrades more gracefully by always
+delivering a complete spatial layout. The analysis is restricted to the
+two completed sweeps; per-task breakdowns and failure cases will be
+reported once the \textit{ongoing} runs finish.
 
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a robot-specialized perceptual memory that decouples
-\emph{what was seen and when} from \emph{how things moved between
-observations}. CLIP-derivative keyframe detection picks frames at semantic
-transitions, a delta-based per-keyframe TokenDrop retains only the patches
-that change relative to the previous keyframe, and a small MotionEncoder
-$f_\theta$, pretrained JEPA-style with an auxiliary MotionDiT decoder that
-is discarded at deployment, summarizes each short window into a single
-motion token. The resulting fixed-budget memory is exposed to the
-$\pi_{0.5}$ backbone through three interchangeable interfaces ---
-Memory-as-Context, Memory-as-Modulation, and Memory-as-Expert --- so that
-content-blind subsampling baselines and our content-aware design can be
-compared head-to-head on RoboMME at matched memory budgets and matched
-integration. The completed budget sweeps already establish that the two
-content-blind perceptual variants of MME-VLA degrade in qualitatively
-different ways: \emph{Even Frame Sampling} loses $15.45$ pt nearly
-linearly across $B\!\in\![1024,64]$, while \emph{Even TokenDropping} loses
-$22.06$ pt with a sharp $14.65$-pt cliff at $B\!=\!64$, indicating that
-which patches are retained matters most precisely when the budget is
-smallest. This is the controlled signature our keyframe-and-motion design
-is meant to exploit.
+We proposed a robot-specialized perceptual memory (Sec.~\ref{sec:method})
+that decouples semantic keyframes from learned short-range motion
+summaries within a fixed token budget, exposed to the $\pi_{0.5}$
+backbone through three interchangeable interfaces (MaC / MaM / MaE).
+The completed budget sweeps establish that the two content-blind
+perceptual variants of MME-VLA degrade in qualitatively different ways:
+\emph{Even Frame Sampling} loses $15.45$ pt nearly linearly across
+$B\!\in\![1024,64]$, while \emph{Even TokenDropping} loses $22.06$ pt
+with a sharp $14.65$-pt cliff at $B\!=\!64$, confirming that which
+patches are retained matters most when the budget is tightest --- the
+regime our content-aware design targets.
 
 \paragraph{Limitations and future work.}
-Our quantitative evaluation is incomplete: at the time of submission,
-the \emph{Clip-Keyframe}, \emph{Clip-Keyframe + TokenDrop}, and
-\emph{Clip-Keyframe + TokenDrop + Motion (Ours)} configurations under MaM,
-the comparison across the three integration mechanisms (MaC / MaM / MaE)
-called for by RQ3, and the cross-backbone study with OpenVLA and
-Qwen2.5-VL are all still running. The analysis we present here is
-therefore restricted to the two completed content-blind baselines; a
-per-task breakdown across RoboMME's temporal / spatial / object /
-procedural categories, formal ablations of TokenDrop and motion tokens,
-and qualitative failure cases will be reported once those runs finish.
-Beyond completing the present evaluation, three directions look
-particularly worth pursuing: (i) online or streaming updates to
-$\mathbf{M}_t$ that recompute keyframe assignments as the episode evolves;
-(ii) hybrid memories that combine our perceptual tokens with the
-language-subgoal memories used by recent VLM-driven
-policies~\citep{sridhar2025memer,geminiroboticsTeam2025gemini15}, since the
-two families capture complementary aspects of history; and (iii)
-validation on real hardware beyond the RoboMME simulation suite, where
-sensor noise and timing jitter will further stress the keyframe detector
-and the MotionEncoder.
+Quantitative evaluation is incomplete at submission; the keyframe-based
+configurations, integration-mechanism comparison (RQ3), and cross-backbone
+study are still running, with full results to appear in the camera-ready
+version. Future directions include (i)~online keyframe reassignment as
+episodes evolve; (ii)~hybrid perceptual-plus-language memories combining
+our tokens with VLM-driven subgoal representations; and (iii)~validation
+on real hardware where sensor noise will further stress the keyframe
+detector and MotionEncoder.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % NOTE: everything between this line and \begin{ack} below was removed --
