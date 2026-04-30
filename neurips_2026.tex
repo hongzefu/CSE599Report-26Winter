@@ -7,7 +7,7 @@
 % The authors should use one of these tracks.
 % Before accepting by the NeurIPS conference, select one of the options below.
 % 0. "default" for submission
-\usepackage{neurips_2026}
+\usepackage[main,final]{neurips_2026}
 % the "default" option is equal to the "main" option, which is used for the Main Track with double-blind reviewing.
 % 1. "main" option is used for the Main Track
 %  \usepackage[main]{neurips_2026}
@@ -76,34 +76,9 @@
 
 
 \author{%
-  David S.~Hippocampus\thanks{Use footnote for providing further information
-    about author (webpage, alternative address)---\emph{not} for acknowledging
-    funding agencies.} \\
-  Department of Computer Science\\
-  Cranberry-Lemon University\\
-  Pittsburgh, PA 15213 \\
-  \texttt{hippo@cs.cranberry-lemon.edu} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
+  Hongze Fu \\
+  University of Michigan, Ann Arbor \\
+  \texttt{hongzefu@umich.edu} \\
 }
 
 
@@ -118,7 +93,7 @@ Long-horizon robotic manipulation is non-Markovian: counting events,
 recovering object identity under occlusion, and reproducing demonstrated
 motions all require retaining many seconds of visual history while the
 policy runs at control rate within a fixed token budget. Recent benchmark
-evidence~\citep{dai2026robomme} shows that perceptual memory representations
+evidence shows that perceptual memory representations
 dominate motion-centric and time-sensitive tasks, but its concrete
 instantiations --- uniform frame sampling and temporal-saliency-agnostic
 token dropping --- are content-blind and degrade sharply as the memory
@@ -128,12 +103,12 @@ perceptual memory that decouples \emph{what} the robot saw from \emph{how}
 things moved between observations: a CLIP-derivative keyframe selector with
 delta-based per-keyframe TokenDrop carries sparse spatial evidence at
 semantic transitions, and a learned MotionEncoder, pretrained on unlabeled
-robot video via latent future-token prediction~\citep{assran2023ijepa},
+robot video via latent future-token prediction,
 summarizes each short window into a single compact motion
 token. The combined sequence is exposed to the $\pi_{0.5}$ backbone
 through a fixed-budget memory interface compatible with all three
 Memory-as-Context, -Modulator, and -Expert integration mechanisms used in
-the MME-VLA suite~\citep{dai2026robomme}, enabling apples-to-apples
+the MME-VLA suite, enabling apples-to-apples
 comparison against uniform-frame-sampling and token-dropping baselines at
 matched memory budgets. Full quantitative evaluation on RoboMME is
 \emph{in progress} (Sec.~\ref{sec:exp}).
